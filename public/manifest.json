@@ -1,0 +1,15 @@
+{
+  "name": "Personel QR Giriş-Çıkış Takip",
+  "short_name": "PDKS QR",
+  "start_url": "/p",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

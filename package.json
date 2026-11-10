@@ -1,0 +1,14 @@
+{
+  "name": "personel-pdks",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "pg": "^8.13.1",
+    "qr-scanner": "^1.4.2",
+    "qrcode-generator": "^1.4.4"
+  }
+}

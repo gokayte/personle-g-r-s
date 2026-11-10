@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yönetici Paneli — Personel QR Takip</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <!-- Setup / Login Gate -->
+  <div id="adminAuthView" class="auth-wrap hidden">
+    <div class="auth-card">
+      <div style="text-align:center;margin-bottom:18px;">
+        <img src="/allstar-logo.png" alt="All Stars Music" style="width:min(100%,230px);height:auto;display:block;margin:0 auto 12px;">
+        <div id="loginTitle" style="font-weight:800;font-size:18px;">Yönetici Girişi</div>
+        <div id="loginSub" style="font-size:13px;color:var(--muted);">Personel Giriş-Çıkış & Mesai Paneli</div>
+      </div>
+
+      <!-- Login Form -->
+      <form id="adminLoginForm" style="display:flex;flex-direction:column;gap:12px;">
+        <div class="field">
+          <label>Yönetici Şifresi</label>
+          <input class="input" type="password" id="adminPassInput" placeholder="Şifrenizi girin" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="padding:11px;font-size:14.5px;">Panele Giriş Yap</button>
+        <a href="/" class="btn" style="text-align:center;">Ana Sayfaya Dön</a>
+      </form>
+
+      <!-- First Time Setup Form (only if DB has no admin yet) -->
+      <form id="adminSetupForm" class="hidden" style="display:flex;flex-direction:column;gap:12px;">
+        <div class="field">
+          <label>İş Yeri / Firma Adı</label>
+          <input class="input" id="setupCompanyInput" value="İş Yeri Personel Takip" required>
+        </div>
+        <div class="field">
+          <label>Yönetici Şifresi Belirleyin (En az 6 karakter)</label>
+          <input class="input" type="password" id="setupPassInput" minlength="6" required>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;">
+          <input type="checkbox" id="setupSeedCheck" checked>
+          10 örnek personel ve örnek mesai verileri yüklensin
+        </label>
+        <button type="submit" class="btn btn-primary" style="padding:11px;">Sistemi Kur ve Başlat</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main Admin App -->
+  <div id="adminAppView" class="hidden">
+    <header class="topbar no-print">
+      <div class="container">
+        <div class="topbar-inner">
+          <div class="brand">
+            <img src="/allstar-logo.png" alt="All Stars Music" class="brand-logo">
+            <span class="brand-divider"></span>
+            <div>
+              <div id="navCompanyName" style="line-height:1.15;font-size:14.5px;">All Stars Music</div>
+              <div style="font-size:11.5px;font-weight:500;color:var(--muted);" id="navWorkHours">Mesai: 09:00 - 18:00</div>
+            </div>
+            <span class="live-pill"><span class="live-dot"></span> Canlı</span>
+          </div>
+
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <button id="launchKioskBtn" class="btn btn-sm"><span class="material-symbols-outlined" style="font-size:16px;">devices</span> Kiosk Ekranı</button>
+            <button id="refreshNowBtn" class="btn btn-sm"><span class="material-symbols-outlined" style="font-size:16px;">refresh</span> Yenile</button>
+            <button id="adminLogoutBtn" class="btn btn-sm"><span class="material-symbols-outlined" style="font-size:16px;">logout</span> Çıkış</button>
+          </div>
+        </div>
+
+        <nav class="nav-tabs" id="adminTabs">
+          <button class="tab-btn active" data-tab="overview">Canlı Durum</button>
+          <button class="tab-btn" data-tab="punches">Giriş-Çıkış Kayıtları</button>
+          <button class="tab-btn" data-tab="reports">Mesai & Puantaj Raporu</button>
+          <button class="tab-btn" data-tab="meetings"><span class="material-symbols-outlined" style="font-size:16px;">event</span> Toplantı Takvimi</button>
+          <button class="tab-btn" data-tab="employees">Personeller (Eşleştirme)</button>
+          <button class="tab-btn" data-tab="qrcenter">QR Kartlar & Afiş</button>
+          <button class="tab-btn" data-tab="settings">Ayarlar</button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container" style="padding-top:16px;padding-bottom:48px;">
+      <!-- Contextual Banners -->
+      <div id="demoBanner" class="banner banner-info no-print hidden">
+        <div>
+          <strong>Örnek Veriler Yüklü:</strong> Sistemi inceleyebilmeniz için örnek personel ve mesai kayıtları eklendi.
+        </div>
+        <button id="clearDemoBtn" class="btn btn-sm" style="background:#fff;border-color:#93c5fd;color:#1d4ed8;"><span class="material-symbols-outlined" style="font-size:16px;">delete_sweep</span> Örnek Verileri Temizle</button>
+      </div>
+
+      <div id="dbBanner" class="banner banner-warn no-print hidden">
+        <div>
+          <strong>Geçici Bulut Veritabanı (72 Saat):</strong> Verilerinizin kalıcı olması için ücretsiz Neon hesabınıza aktarmanız önerilir.
+        </div>
+        <button id="goDbSettingsBtn" class="btn btn-sm" style="background:#fff;border-color:#fcd34d;color:#92400e;">Kalıcı Yap →</button>
+      </div>
+
+      <!-- TAB 1: OVERVIEW -->
+      <section id="tab-overview" class="tab-pane">
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Şu An İçeride</div>
+            <div class="kpi-val" id="kpiInside" style="color:var(--green);">0</div>
+            <div class="kpi-sub" id="kpiTotalSub">Toplam 0 aktif personel</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Bugün Giriş Yapan</div>
+            <div class="kpi-val" id="kpiArrived" style="color:var(--primary);">0</div>
+            <div class="kpi-sub" id="kpiPunchesSub">Bugün 0 okutma hareketi</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Bugün Geç Kalan</div>
+            <div class="kpi-val" id="kpiLate" style="color:var(--amber);">0</div>
+            <div class="kpi-sub">Tolerans süresi aşımı</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Henüz Gelmeyen</div>
+            <div class="kpi-val" id="kpiNotArrived" style="color:var(--muted);">0</div>
+            <div class="kpi-sub">Bugün kaydı olmayan</div>
+          </div>
+        </div>
+
+        <div class="split-grid">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;flex-wrap:wrap;">
+              <div>
+                <div style="font-weight:700;font-size:15.5px;">Bugünkü Personel Durumu</div>
+                <div style="font-size:12.5px;color:var(--muted);">Kim kaçta girdi, kaçta çıktı ve içeride ne kadar kaldı</div>
+              </div>
+              <button id="goAddPunchFromOverview" class="btn btn-sm">+ Manuel Giriş/Çıkış</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Personel</th>
+                    <th>Anlık Durum</th>
+                    <th>İlk Giriş</th>
+                    <th>Son Çıkış</th>
+                    <th>Bugün Süre</th>
+                    <th>Hızlı Test</th>
+                  </tr>
+                </thead>
+                <tbody id="overviewStaffBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <div>
+                <div style="font-weight:700;font-size:15.5px;">Son Okutulan Kayıtlar</div>
+                <div style="font-size:12.5px;color:var(--muted);">Karekod okutulunca anında buraya düşer</div>
+              </div>
+            </div>
+            <div id="recentFeedList" class="feed-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: PUNCHES -->
+      <section id="tab-punches" class="tab-pane hidden">
+        <div class="card" style="margin-bottom:16px;">
+          <div class="form-row">
+            <div class="field">
+              <label>Başlangıç Tarihi</label>
+              <input type="date" class="input" id="fltFrom">
+            </div>
+            <div class="field">
+              <label>Bitiş Tarihi</label>
+              <input type="date" class="input" id="fltTo">
+            </div>
+            <div class="field">
+              <label>Personel</label>
+              <select class="input" id="fltEmp">
+                <option value="">Tüm Personeller</option>
+              </select>
+            </div>
+            <div class="field" style="max-width:160px;">
+              <label>İşlem</label>
+              <select class="input" id="fltType">
+                <option value="">Tümü</option>
+                <option value="in">Sadece Giriş</option>
+                <option value="out">Sadece Çıkış</option>
+              </select>
+            </div>
+            <button id="applyPunchFilterBtn" class="btn btn-primary">Filtrele</button>
+            <button id="openAddPunchBtn" class="btn btn-success">+ Manuel Kayıt Ekle</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tarih</th>
+                  <th>Saat</th>
+                  <th>Personel</th>
+                  <th>İşlem</th>
+                  <th>Okutma Yöntemi</th>
+                  <th>Not</th>
+                  <th>İşlemler</th>
+                </tr>
+              </thead>
+              <tbody id="punchesTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: REPORTS -->
+      <section id="tab-reports" class="tab-pane hidden">
+        <div class="card" style="margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;">
+            <div class="form-row" style="flex:1;">
+              <div class="field" style="max-width:175px;">
+                <label>Başlangıç</label>
+                <input type="date" class="input" id="repFrom">
+              </div>
+              <div class="field" style="max-width:175px;">
+                <label>Bitiş</label>
+                <input type="date" class="input" id="repTo">
+              </div>
+              <button id="repRunBtn" class="btn btn-primary">Raporu Getir</button>
+              <button class="btn btn-sm" data-rep-preset="today">Bugün</button>
+              <button class="btn btn-sm" data-rep-preset="week">Son 7 Gün</button>
+              <button class="btn btn-sm" data-rep-preset="month">Bu Ay</button>
+            </div>
+            <button id="exportXlsxBtn" class="btn btn-success"><span class="material-symbols-outlined" style="font-size:16px;">table_view</span> Excel (.xlsx) İndir</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px;">
+          <div style="font-weight:700;font-size:15.5px;margin-bottom:10px;">Personel Toplam Mesai & Puantaj Özeti</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Personel</th>
+                  <th>Geldiği Gün</th>
+                  <th>Toplam Çalışma</th>
+                  <th>Geç Kalma</th>
+                  <th>Erken Çıkış</th>
+                  <th>Çıkış Eksik</th>
+                  <th>Gelmediği İş Günü</th>
+                </tr>
+              </thead>
+              <tbody id="repSummaryBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:700;font-size:15.5px;margin-bottom:10px;">Günlük Giriş-Çıkış Eşleşmeleri</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tarih</th>
+                  <th>Personel</th>
+                  <th>İlk Giriş Saati</th>
+                  <th>Son Çıkış Saati</th>
+                  <th>Günlük Mesai</th>
+                  <th>Durum / Detay</th>
+                </tr>
+              </thead>
+              <tbody id="repDailyBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: MEETINGS CALENDAR -->
+      <section id="tab-meetings" class="tab-pane hidden">
+        <div class="card" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+          <div>
+            <div style="font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px;">
+              <span><span class="material-symbols-outlined" style="font-size:18px;">calendar_month</span> Haftalık Toplantı Programı & Takvimi</span>
+              <span id="meetingCountBadge" class="badge badge-neutral" style="font-size:12px;">0 Toplantı</span>
+            </div>
+            <div style="font-size:13px;color:var(--muted);">
+              Personellerin ve ekiplerin haftalık toplantı gün ve saat aralıklarını (örn. Pazartesi 10:00-11:00, Salı 14:00-15:30) buradan yönetebilirsiniz.
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button id="seedMeetingsBtn" class="btn btn-sm" title="Varsayılan örnek toplantı programını yükler"><span class="material-symbols-outlined" style="font-size:16px;">auto_awesome</span> Örnek Programı Yükle</button>
+            <button id="openAddMeetingBtn" class="btn btn-primary"><span class="material-symbols-outlined" style="font-size:16px;">add</span> Yeni Toplantı Ekle</button>
+          </div>
+        </div>
+
+        <!-- Week Navigator Bar -->
+        <div class="card" style="margin-bottom:16px;padding:12px 18px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button type="button" class="btn btn-sm" id="calPrevWeekBtn"><span class="material-symbols-outlined" style="font-size:16px;">chevron_left</span> Önceki Hafta</button>
+              <button type="button" class="btn btn-sm" id="calTodayBtn">Bugün</button>
+              <button type="button" class="btn btn-sm" id="calNextWeekBtn">Sonraki Hafta <span class="material-symbols-outlined" style="font-size:16px;">chevron_right</span></button>
+              <span id="calCurrentRangeTitle" style="font-weight:700;font-size:15px;margin-left:8px;color:var(--text);"></span>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+              <div class="meeting-filter-tabs" id="meetingDayFilters">
+                <button class="filter-chip active" data-day="all">Tüm Günler</button>
+                <button class="filter-chip" data-day="1">Pzt</button>
+                <button class="filter-chip" data-day="2">Sal</button>
+                <button class="filter-chip" data-day="3">Çar</button>
+                <button class="filter-chip" data-day="4">Per</button>
+                <button class="filter-chip" data-day="5">Cum</button>
+                <button class="filter-chip" data-day="6">Cmt</button>
+                <button class="filter-chip" data-day="0">Paz</button>
+              </div>
+              <button type="button" class="btn btn-sm active" id="viewGridBtn" style="font-weight:600;"><span class="material-symbols-outlined" style="font-size:16px;">grid_view</span> Takvim</button>
+              <button type="button" class="btn btn-sm" id="viewListBtn"><span class="material-symbols-outlined" style="font-size:16px;">view_list</span> Liste</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Weekly Grid Container -->
+        <div id="meetingGridView" class="meeting-week-grid"></div>
+
+        <!-- List View (Table) -->
+        <div id="meetingListView" class="card hidden">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Gün</th>
+                  <th>Saat Aralığı</th>
+                  <th>Toplantı Konusu</th>
+                  <th>Katılımcılar</th>
+                  <th>Toplantı Yeri / Odası</th>
+                  <th>Açıklama</th>
+                  <th style="width:130px;">İşlemler</th>
+                </tr>
+              </thead>
+              <tbody id="meetingTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: EMPLOYEES -->
+      <section id="tab-employees" class="tab-pane hidden">
+        <div class="card" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+          <div>
+            <div style="font-weight:700;font-size:16px;">Personel Listesi ve Telefon Eşleştirme</div>
+            <div style="font-size:13px;color:var(--muted);">
+              Personeller kendi telefonlarıyla kapıdaki afişi okutacaksa, 6 haneli kodu veya eşleştirme linkini personele bir kez iletin.
+            </div>
+          </div>
+          <button id="openAddEmpBtn" class="btn btn-primary">+ Yeni Personel Ekle</button>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ad Soyad</th>
+                  <th>Görev / Bölüm</th>
+                  <th>Telefon</th>
+                  <th>Telefon Eşleştirme (Tek Cihaz Kilidi)</th>
+                  <th>Durum</th>
+                  <th>İşlemler</th>
+                </tr>
+              </thead>
+              <tbody id="empTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: QR CENTER -->
+      <section id="tab-qrcenter" class="tab-pane hidden">
+        <div class="card no-print" style="margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+            <div>
+              <div style="font-weight:700;font-size:16px;">Karekod (QR) Merkezi — Yazdırma ve Kurulum</div>
+              <div style="font-size:13px;color:var(--muted);">İster kapıya tek bir A4 afiş asın, ister her personele yaka kartı basın. İkisi aynı anda da çalışır.</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button id="printDoorPosterBtn" class="btn btn-primary"><span class="material-symbols-outlined" style="font-size:16px;">print</span> Kapı QR Afişini Yazdır (A4)</button>
+              <button id="printEmpCardsBtn" class="btn btn-success"><span class="material-symbols-outlined" style="font-size:16px;">badge</span> Personel QR Kartlarını Yazdır (A4)</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="printPosterArea" class="card" style="margin-bottom:20px;">
+          <div class="no-print" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+            <div>
+              <span class="badge badge-out">Yöntem A — Personelin Kendi Telefonu İle</span>
+              <div style="font-weight:700;font-size:15px;margin-top:4px;">İş Yeri Giriş Kapısı QR Afişi</div>
+            </div>
+            <button id="rotateSiteKeyBtn" class="btn btn-sm"><span class="material-symbols-outlined" style="font-size:16px;">autorenew</span> Kapı Kodunu Yenile</button>
+          </div>
+
+          <div class="door-poster-box">
+            <img src="/allstar-logo.png" alt="All Stars Music" style="width:min(100%,240px);height:auto;display:block;margin:0 auto 10px;">
+            <div style="font-size:12.5px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#475569;" id="posterCompanyName">ALL STARS MUSIC</div>
+            <div style="font-size:24px;font-weight:800;margin-top:4px;">PERSONEL GİRİŞ / ÇIKIŞ NOKTASI</div>
+            <div id="doorPosterSvgWrap"></div>
+            <div style="font-size:14.5px;font-weight:600;margin-bottom:6px;">Telefonunuzun kamerasını açıp bu karekodu okutun</div>
+            <div style="font-size:12.5px;color:#64748b;" id="doorPosterUrlText"></div>
+          </div>
+        </div>
+
+        <div id="printCardsArea" class="card">
+          <div class="no-print" style="margin-bottom:14px;">
+            <span class="badge badge-in">Yöntem B — Kapıdaki Kiosk Kamerasına Okutmak İçin</span>
+            <div style="font-weight:700;font-size:15px;margin-top:4px;">Personel Yaka Kartları</div>
+          </div>
+          <div id="empQrCardsGrid" class="qr-cards-grid"></div>
+        </div>
+      </section>
+
+      <!-- TAB 6: SETTINGS -->
+      <section id="tab-settings" class="tab-pane hidden">
+        <div class="split-grid">
+          <div class="card">
+            <div style="font-weight:700;font-size:16px;margin-bottom:14px;">İş Yeri ve Mesai Saatleri</div>
+            <form id="settingsForm" style="display:flex;flex-direction:column;gap:12px;">
+              <div class="field">
+                <label>İş Yeri / Firma Adı</label>
+                <input class="input" id="setCompanyName" required>
+              </div>
+              <div class="form-row">
+                <div class="field">
+                  <label>Mesai Başlangıç</label>
+                  <input type="time" class="input" id="setWorkStart" required>
+                </div>
+                <div class="field">
+                  <label>Mesai Bitiş</label>
+                  <input type="time" class="input" id="setWorkEnd" required>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="field">
+                  <label>Geç Kalma Toleransı (Dk)</label>
+                  <input type="number" class="input" id="setLateTol" min="0" max="180">
+                </div>
+                <div class="field">
+                  <label>Erken Çıkış Toleransı (Dk)</label>
+                  <input type="number" class="input" id="setEarlyTol" min="0" max="180">
+                </div>
+                <div class="field">
+                  <label>Çift Okutma Koruması (Sn)</label>
+                  <input type="number" class="input" id="setCooldown" min="5" max="600">
+                </div>
+              </div>
+              <div class="field">
+                <label>Çalışma Günleri</label>
+                <div id="setWorkDaysBox" style="display:flex;gap:10px;flex-wrap:wrap;padding-top:4px;font-size:13.5px;">
+                  <label><input type="checkbox" value="1"> Pzt</label>
+                  <label><input type="checkbox" value="2"> Sal</label>
+                  <label><input type="checkbox" value="3"> Çar</label>
+                  <label><input type="checkbox" value="4"> Per</label>
+                  <label><input type="checkbox" value="5"> Cum</label>
+                  <label><input type="checkbox" value="6"> Cmt</label>
+                  <label><input type="checkbox" value="0"> Paz</label>
+                </div>
+              </div>
+
+              <hr style="border:none;border-top:1px solid var(--border);margin:4px 0;">
+              <div style="font-weight:700;font-size:14.5px;">Konum (GPS) Doğrulaması (Telefonla Okutmalar İçin)</div>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;">
+                <input type="checkbox" id="setGeoEnabled">
+                Sadece iş yeri konumundayken telefonla giriş-çıkış yapılabilsin
+              </label>
+              <div class="form-row">
+                <div class="field">
+                  <label>Enlem (Lat)</label>
+                  <input class="input" id="setGeoLat" placeholder="41.0082">
+                </div>
+                <div class="field">
+                  <label>Boylam (Lng)</label>
+                  <input class="input" id="setGeoLng" placeholder="28.9784">
+                </div>
+                <div class="field">
+                  <label>Yarıçap (Metre)</label>
+                  <input type="number" class="input" id="setGeoRadius" value="150" min="25" max="5000">
+                </div>
+              </div>
+              <button type="button" id="fillCurrentGeoBtn" class="btn btn-sm" style="align-self:flex-start;"><span class="material-symbols-outlined" style="font-size:16px;">my_location</span> Şu Anki Konumumu İş Yeri Olarak Doldur</button>
+
+              <button type="submit" class="btn btn-primary" style="margin-top:6px;">Ayarları Kaydet</button>
+            </form>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <!-- DB Permanence Card -->
+            <div class="card" id="dbClaimCard">
+              <div style="font-weight:700;font-size:15.5px;margin-bottom:6px;"><span class="material-symbols-outlined" style="font-size:18px;">database</span> Bulut Veritabanı Durumu</div>
+              <p style="font-size:13px;color:var(--muted);margin:0 0 12px;" id="dbClaimDesc">
+                Veritabanınız bulutta aktif olarak çalışıyor. Geçici kurulum veritabanını ücretsiz Neon hesabınıza devrederek süresiz kalıcı yapabilirsiniz.
+              </p>
+              <button id="mintClaimLinkBtn" class="btn btn-primary btn-sm"><span class="material-symbols-outlined" style="font-size:16px;">link</span> 15 Dakikalık Aktarım Bağlantısı Oluştur</button>
+              <div id="claimResultBox" class="hidden" style="margin-top:12px;padding:12px;background:var(--amber-bg);border:1px solid #fde68a;border-radius:10px;font-size:13px;"></div>
+            </div>
+
+            <!-- Password Change Card -->
+            <div class="card">
+              <div style="font-weight:700;font-size:15.5px;margin-bottom:10px;"><span class="material-symbols-outlined" style="font-size:18px;">lock</span> Yönetici Şifresini Değiştir</div>
+              <form id="changePassForm" style="display:flex;flex-direction:column;gap:10px;">
+                <input type="password" class="input" id="curPassInp" placeholder="Mevcut şifreniz" required>
+                <input type="password" class="input" id="newPassInp" placeholder="Yeni şifre (en az 6 karakter)" minlength="6" required>
+                <button type="submit" class="btn">Şifreyi Güncelle</button>
+              </form>
+            </div>
+
+            <!-- Active Sessions Card -->
+            <div class="card">
+              <div style="font-weight:700;font-size:15.5px;margin-bottom:10px;"><span class="material-symbols-outlined" style="font-size:18px;">devices</span> Aktif Cihaz ve Kiosk Oturumları</div>
+              <div id="sessionsListBox" style="display:flex;flex-direction:column;gap:8px;font-size:13px;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL: ADD/EDIT MEETING -->
+  <div id="meetingModal" class="modal-backdrop hidden">
+    <div class="modal" style="max-width:520px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h3 style="margin:0;font-size:17px;" id="meetingModalTitle">Yeni Toplantı Ekle</h3>
+        <button type="button" class="btn btn-sm" id="closeMeetingModalBtn">✕</button>
+      </div>
+      <form id="meetingForm" style="display:flex;flex-direction:column;gap:12px;">
+        <input type="hidden" id="meetId">
+        <div class="field">
+          <label>Toplantı Başlığı / Konusu *</label>
+          <input class="input" id="meetTitle" placeholder="Örn: Haftalık Koordinasyon & Planlama" required>
+        </div>
+        <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:10px;">
+          <div class="field">
+            <label>Tarih (Belirli Bir Gün İçin)</label>
+            <input type="date" class="input" id="meetDate">
+          </div>
+          <div class="field">
+            <label>Haftalık Gün *</label>
+            <select class="input" id="meetDayOfWeek">
+              <option value="1">Pazartesi</option>
+              <option value="2">Salı</option>
+              <option value="3">Çarşamba</option>
+              <option value="4">Perşembe</option>
+              <option value="5">Cuma</option>
+              <option value="6">Cumartesi</option>
+              <option value="0">Pazar</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Kategori Rengi</label>
+            <select class="input" id="meetColor">
+              <option value="blue">Mavi (Genel & Planlama)</option>
+              <option value="emerald">Yeşil (Müzik & Prodüksiyon)</option>
+              <option value="purple">Mor (Pazarlama & Tasarım)</option>
+              <option value="amber">Turuncu (Finans & İdari)</option>
+              <option value="rose">Kırmızı (Önemli / Acil)</option>
+              <option value="indigo">Lacivert (Yönetim & Kapanış)</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="field">
+            <label>Başlangıç Saati *</label>
+            <input type="time" class="input" id="meetStartTime" value="10:00" required>
+          </div>
+          <div class="field">
+            <label>Bitiş Saati *</label>
+            <input type="time" class="input" id="meetEndTime" value="11:00" required>
+          </div>
+        </div>
+        <div class="field">
+          <label>Katılımcılar</label>
+          <input class="input" id="meetParticipants" placeholder="Örn: Tüm Personel, Ahmet, Ayşe, Müzik Ekibi">
+        </div>
+        <div class="field">
+          <label>Toplantı Yeri / Odası</label>
+          <input class="input" id="meetRoom" placeholder="Örn: Toplantı Odası A, Ana Stüdyo, Zoom">
+        </div>
+        <div class="field">
+          <label>Açıklama / Gündem Maddeleri</label>
+          <textarea class="input" id="meetDescription" rows="2" placeholder="Görüşülecek başlıklar ve notlar..."></textarea>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px;">
+          <button type="button" class="btn" id="cancelMeetingBtn">İptal</button>
+          <button type="submit" class="btn btn-primary" id="saveMeetingBtn">Kaydet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Reusable Modal -->
+  <div id="modalBackdrop" class="modal-backdrop hidden">
+    <div class="modal" id="modalContent"></div>
+  </div>
+
+  <script src="/vendor/qrcode.js"></script>
+  <script src="/common.js"></script>
+  <script src="/admin.js"></script>
+</body>
+</html>
