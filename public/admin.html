@@ -24,6 +24,11 @@
           <input class="input" type="password" id="adminPassInput" placeholder="Şifrenizi girin" required>
         </div>
         <button type="submit" class="btn btn-primary" style="padding:11px;font-size:14.5px;">Panele Giriş Yap</button>
+        <div style="text-align:center;">
+          <button type="button" id="forgotPassBtn" class="btn btn-sm" style="background:transparent;border:none;color:var(--muted);font-size:12.5px;text-decoration:underline;">
+            Şifremi unuttum
+          </button>
+        </div>
         <a href="/" class="btn" style="text-align:center;">Ana Sayfaya Dön</a>
       </form>
 
@@ -31,7 +36,11 @@
       <form id="adminSetupForm" class="hidden" style="display:flex;flex-direction:column;gap:12px;">
         <div class="field">
           <label>İş Yeri / Firma Adı</label>
-          <input class="input" id="setupCompanyInput" value="İş Yeri Personel Takip" required>
+          <input class="input" id="setupCompanyInput" value="All Stars Music" required>
+        </div>
+        <div class="field hidden" id="setupKeyFieldWrap">
+          <label>Kurulum Anahtarı (SETUP_KEY)</label>
+          <input class="input" type="password" id="setupKeyInput" placeholder="Vercel ortam değişkenindeki SETUP_KEY">
         </div>
         <div class="field">
           <label>Yönetici Şifresi Belirleyin (En az 6 karakter)</label>
@@ -62,6 +71,7 @@
           </div>
 
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <a href="/marka" target="_blank" class="btn btn-sm"><span class="material-symbols-outlined" style="font-size:16px;">palette</span> Marka Kiti</a>
             <button id="launchKioskBtn" class="btn btn-sm"><span class="material-symbols-outlined" style="font-size:16px;">devices</span> Kiosk Ekranı</button>
             <button id="refreshNowBtn" class="btn btn-sm"><span class="material-symbols-outlined" style="font-size:16px;">refresh</span> Yenile</button>
             <button id="adminLogoutBtn" class="btn btn-sm"><span class="material-symbols-outlined" style="font-size:16px;">logout</span> Çıkış</button>
@@ -74,6 +84,7 @@
           <button class="tab-btn" data-tab="reports">Mesai & Puantaj Raporu</button>
           <button class="tab-btn" data-tab="meetings"><span class="material-symbols-outlined" style="font-size:16px;">event</span> Toplantı Takvimi</button>
           <button class="tab-btn" data-tab="employees">Personeller (Eşleştirme)</button>
+          <button class="tab-btn" data-tab="archive"><span class="material-symbols-outlined" style="font-size:16px;">inventory_2</span> Arşiv &amp; Depo</button>
           <button class="tab-btn" data-tab="qrcenter">QR Kartlar & Afiş</button>
           <button class="tab-btn" data-tab="settings">Ayarlar</button>
         </nav>
@@ -372,6 +383,164 @@
       </section>
 
       <!-- TAB 5: QR CENTER -->
+      <section id="tab-archive" class="tab-pane hidden">
+        <!-- Depo durumu -->
+        <div class="card" style="margin-bottom:16px;background:linear-gradient(150deg,#0f172a,#1e293b);color:#fff;border:none;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="material-symbols-outlined" style="font-size:22px;color:#fca5a5;">cloud_done</span>
+                <div style="font-weight:800;font-size:17px;">Uygulama Depo &amp; Arşiv Alanı</div>
+              </div>
+              <div style="font-size:12.5px;color:#cbd5e1;margin-top:6px;max-width:620px;line-height:1.55;">
+                Tüm geçmiş kayıtlar kalıcı bulut veritabanında (PostgreSQL) tutulur. Dönem arşivleri her ayın
+                puantaj özetini dondurur; belgeler, raporlar ve yedekler burada saklanır — sunucu yeniden
+                başlasa veya güncellense bile veriler kaybolmaz.
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div id="archiveStorage" class="badge" style="background:rgba(255,255,255,0.14);color:#fff;font-weight:700;">Yükleniyor…</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:18px;">
+            <div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:12px 14px;">
+              <div style="font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;font-weight:700;">Dönem Arşivi</div>
+              <div id="archiveSnapCount" style="font-size:22px;font-weight:800;margin-top:2px;">0</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:12px 14px;">
+              <div style="font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;font-weight:700;">Yüklenen Belge</div>
+              <div id="archiveFileCount" style="font-size:22px;font-weight:800;margin-top:2px;">0</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:12px 14px;">
+              <div style="font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;font-weight:700;">Kullanılan Alan</div>
+              <div id="archiveUsedBytes" style="font-size:22px;font-weight:800;margin-top:2px;">0 KB</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:12px 14px;">
+              <div style="font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;font-weight:700;">Saklama</div>
+              <div style="font-size:13px;font-weight:700;margin-top:6px;color:#86efac;">Süresiz (bulut)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="split-grid">
+          <!-- Dönem arşivi -->
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
+              <div>
+                <div style="font-weight:800;font-size:15.5px;">Geçmiş Dönem Arşivi</div>
+                <div style="font-size:12.5px;color:var(--muted);">Aylık puantaj özetleri dondurulur, dilediğiniz zaman Excel olarak indirilir.</div>
+              </div>
+            </div>
+            <form id="snapshotForm" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin:12px 0;">
+              <div class="field" style="flex:1;min-width:150px;margin:0;">
+                <label>Dönem</label>
+                <input type="month" class="input" id="snapshotPeriod">
+              </div>
+              <button type="submit" class="btn btn-primary" style="padding:11px 16px;">
+                <span class="material-symbols-outlined" style="font-size:18px;">archive</span> Arşive Al
+              </button>
+            </form>
+            <div id="snapshotList" style="display:flex;flex-direction:column;gap:8px;max-height:340px;overflow:auto;"></div>
+          </div>
+
+          <!-- Belge yükleme -->
+          <div class="card">
+            <div style="font-weight:800;font-size:15.5px;margin-bottom:4px;">Belge / Dosya Yükle</div>
+            <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">
+              Sözleşme, izin formu, rapor, yedek dosyası vb. (dosya başına en fazla 4 MB)
+            </div>
+            <form id="uploadForm" style="display:flex;flex-direction:column;gap:10px;">
+              <div class="field">
+                <label>Dosya Seç</label>
+                <input type="file" class="input" id="uploadFile" required style="padding:9px;">
+              </div>
+              <div class="field">
+                <label>Başlık (isteğe bağlı)</label>
+                <input class="input" id="uploadTitle" placeholder="Örn: Kasım 2026 Puantaj Onayı">
+              </div>
+              <div class="form-row">
+                <div class="field">
+                  <label>Kategori</label>
+                  <select class="input" id="uploadCategory">
+                    <option value="puantaj">Puantaj &amp; Mesai</option>
+                    <option value="rapor">Raporlar</option>
+                    <option value="evrak">Evraklar &amp; Sözleşmeler</option>
+                    <option value="qr">QR &amp; Baskı Materyalleri</option>
+                    <option value="yedek">Yedekler</option>
+                    <option value="diger">Diğer</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Dönem / Etiket</label>
+                  <input class="input" id="uploadPeriod" placeholder="2026-11">
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary" style="padding:11px;">
+                <span class="material-symbols-outlined" style="font-size:18px;">upload</span> Depoya Yükle
+              </button>
+            </form>
+          </div>
+        </div>
+
+
+        <!-- Yedekleme -->
+        <div class="card" style="margin-top:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+            <div>
+              <div style="font-weight:800;font-size:15.5px;">Tam Yedek &amp; Geri Yükleme</div>
+              <div style="font-size:12.5px;color:var(--muted);">
+                Tüm personel, giriş-çıkış geçmişi ve toplantılar tek JSON dosyası olarak indirilir.
+                Başka bir veritabanına taşırken veya felaket kurtarmada kullanılır.
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button id="downloadBackupBtn" class="btn btn-primary">
+                <span class="material-symbols-outlined" style="font-size:18px;">cloud_download</span> Tam Yedek İndir
+              </button>
+              <button id="restoreBackupBtn" class="btn">
+                <span class="material-symbols-outlined" style="font-size:18px;">settings_backup_restore</span> Yedekten Geri Yükle
+              </button>
+              <input type="file" id="restoreFileInput" accept="application/json,.json" class="hidden">
+            </div>
+          </div>
+        </div>
+
+        <!-- Dosya listesi -->
+        <div class="card" style="margin-top:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+            <div style="font-weight:800;font-size:15.5px;">Depodaki Dosyalar</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <input class="input" id="archiveSearch" placeholder="Ara…" style="width:180px;padding:8px 10px;font-size:13px;">
+              <select class="input" id="archiveCatFilter" style="width:190px;padding:8px 10px;font-size:13px;">
+                <option value="">Tüm kategoriler</option>
+                <option value="puantaj">Puantaj &amp; Mesai</option>
+                <option value="rapor">Raporlar</option>
+                <option value="evrak">Evraklar &amp; Sözleşmeler</option>
+                <option value="qr">QR &amp; Baskı Materyalleri</option>
+                <option value="yedek">Yedekler</option>
+                <option value="diger">Diğer</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Başlık</th>
+                  <th>Kategori</th>
+                  <th>Dosya</th>
+                  <th>Boyut</th>
+                  <th>Dönem</th>
+                  <th>Yüklenme</th>
+                  <th style="text-align:right;">İşlem</th>
+                </tr>
+              </thead>
+              <tbody id="archiveFilesBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <section id="tab-qrcenter" class="tab-pane hidden">
         <div class="card no-print" style="margin-bottom:16px;">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">

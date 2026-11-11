@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>All Stars Music — Kartvizit (Baskıya Hazır)</title>
+<style>
+  @page { size: A4 portrait; margin: 12mm; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    margin: 0; padding: 24px;
+    background: #eef1f5;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #0b0d13;
+  }
+  .sheet { max-width: 820px; margin: 0 auto; }
+  .head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
+  .head h1 { margin: 0; font-size: 20px; letter-spacing: -0.02em; }
+  .head p { margin: 4px 0 0; font-size: 13px; color: #64748b; }
+  .chip { background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 700; color: #b91c1c; }
+  .print-btn {
+    background: linear-gradient(145deg,#ee3623,#c1121f); color: #fff; border: 0; border-radius: 10px;
+    padding: 11px 18px; font-weight: 700; font-size: 13.5px; cursor: pointer;
+    box-shadow: 0 8px 20px rgba(224,43,22,.25);
+  }
+  .note {
+    background: #fff8f6; border: 1px solid #fbd5cc; border-left: 4px solid #ee3623;
+    border-radius: 10px; padding: 12px 14px; font-size: 12.5px; line-height: 1.6; color: #7f1d1d; margin-bottom: 22px;
+  }
+  .cards { display: flex; gap: 22px; flex-wrap: wrap; }
+
+  /* Kartvizit: 85 x 55 mm */
+  .card {
+    width: 85mm; height: 55mm; border-radius: 2mm; position: relative; overflow: hidden;
+    box-shadow: 0 10px 28px rgba(15,23,42,.18);
+  }
+  .card--front {
+    background:
+      radial-gradient(circle at 78% 12%, rgba(255,255,255,.22), transparent 45%),
+      linear-gradient(140deg, #ee3623 0%, #c1121f 62%, #7f1010 100%);
+    color: #fff;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 7mm 7mm 6mm;
+  }
+  .card--front .logo { height: 13mm; filter: brightness(0) invert(1); }
+  .card--front .tag { font-size: 7.4pt; letter-spacing: .16em; text-transform: uppercase; font-weight: 700; opacity: .92; }
+  .card--front .lines { display: flex; gap: 2mm; align-items: center; }
+  .card--front .bar { width: 14mm; height: 1.2mm; background: rgba(255,255,255,.85); border-radius: 1mm; }
+  .card--front .bar.short { width: 6mm; opacity: .55; }
+  .card--front::after {
+    content: ''; position: absolute; right: -12mm; bottom: -16mm; width: 46mm; height: 46mm;
+    border: 1.4mm solid rgba(255,255,255,.14); border-radius: 50%;
+  }
+
+  .card--back { background: #fff; border: .3mm solid #e6e9ee; padding: 6.5mm; display: flex; flex-direction: column; justify-content: space-between; }
+  .card--back .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 4mm; }
+  .card--back .logo { height: 9mm; }
+  .card--back .role { font-size: 7pt; letter-spacing: .14em; text-transform: uppercase; color: #c1121f; font-weight: 800; }
+  .card--back .name { font-size: 13pt; font-weight: 800; letter-spacing: -0.02em; margin-top: 2mm; line-height: 1.1; }
+  .card--back .title { font-size: 8pt; color: #64748b; font-weight: 600; margin-top: 1mm; }
+  .card--back .contact { font-size: 7.6pt; color: #334155; line-height: 1.7; }
+  .card--back .contact strong { color: #0b0d13; font-weight: 700; }
+  .card--back .foot { display: flex; justify-content: space-between; align-items: center; font-size: 6.8pt; color: #94a3b8; letter-spacing: .04em; }
+  .card--back::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 1.6mm; background: linear-gradient(180deg,#ee3623,#c1121f); }
+
+  .legend { margin-top: 20px; font-size: 12px; color: #64748b; line-height: 1.7; }
+  .legend b { color: #0b0d13; }
+  @media print {
+    body { background: #fff; padding: 0; }
+    .head, .note, .legend, .print-btn { display: none !important; }
+    .cards { gap: 6mm; }
+    .card { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="head">
+    <div>
+      <h1>Kartvizit — All Stars Music</h1>
+      <p>Ön yüz + arka yüz · 85 × 55 mm · 3 mm taşma payı güvenli alanı korunmuştur</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="chip">Baskıya hazır</span>
+      <button class="print-btn" onclick="window.print()">Yazdır / PDF Kaydet</button>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Baskı notu:</b> Yazdırma penceresinde <b>Ölçek %100</b>, <b>Arka plan grafikleri açık</b> ve <b>Kenar boşlukları: Yok</b> seçin.
+    Matbaaya gönderirken “PDF olarak kaydet” deyip oluşan dosyayı kullanabilirsiniz. Ad, ünvan ve iletişim bilgilerini
+    aşağıdaki metni düzenleyerek kişiselleştirin.
+  </div>
+
+  <div class="cards">
+    <!-- ÖN YÜZ -->
+    <div class="card card--front">
+      <img class="logo" src="/allstar-logo.png" alt="All Stars Music">
+      <div>
+        <div class="tag">Personel Devam Sistemi</div>
+        <div class="lines" style="margin-top:2mm;">
+          <span class="bar"></span><span class="bar short"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ARKA YÜZ -->
+    <div class="card card--back">
+      <div class="top">
+        <div>
+          <div class="role">Yönetici</div>
+          <div class="name">Ad Soyad</div>
+          <div class="title">İnsan Kaynakları &amp; Operasyon</div>
+        </div>
+        <img class="logo" src="/allstar-logo.png" alt="All Stars Music">
+      </div>
+      <div class="contact">
+        <div><strong>T</strong> &nbsp;+90 (212) 000 00 00</div>
+        <div><strong>M</strong> &nbsp;+90 (5xx) 000 00 00</div>
+        <div><strong>E</strong> &nbsp;ad.soyad@allstarsmusic.com</div>
+      </div>
+      <div class="foot">
+        <span>allstarsmusic.com</span>
+        <span>İstanbul · Türkiye</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <b>Renkler:</b> Marka kırmızısı <b>#EE3623</b> · Koyu kırmızı <b>#C1121F</b> · Mürekkep siyahı <b>#0B0D13</b> · Gri <b>#64748B</b><br>
+    <b>Yazı tipi:</b> Inter (Regular 400 / SemiBold 600 / ExtraBold 800). Matbaada yoksa Helvetica Neue veya Arial kullanın.
+  </div>
+</div>
+</body>
+</html>

@@ -14,6 +14,14 @@ const files = [
 for (const [srcRel, destName] of files) {
   const src = path.join(root, srcRel);
   const dest = path.join(vendorDir, destName);
+  if (!fs.existsSync(src)) {
+    if (fs.existsSync(dest)) {
+      console.log(`Skip ${srcRel} (not installed); using existing public/vendor/${destName}`);
+      continue;
+    }
+    console.error(`Missing ${srcRel} and no existing public/vendor/${destName}`);
+    process.exit(1);
+  }
   fs.copyFileSync(src, dest);
   console.log(`Copied ${srcRel} -> public/vendor/${destName}`);
 }

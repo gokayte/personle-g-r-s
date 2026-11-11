@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>All Stars Music — Marka &amp; Materyal Merkezi</title>
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/app.css">
+<style>
+  .kit-hero {
+    margin: 22px 0 24px; padding: 34px 26px; border-radius: 20px; color: #fff; position: relative; overflow: hidden;
+    background: radial-gradient(circle at 84% 6%, rgba(255,255,255,.18), transparent 44%), linear-gradient(140deg,#ee3623,#c1121f 62%,#7f1010);
+    box-shadow: 0 18px 40px rgba(193,18,31,.22);
+  }
+  .kit-hero::after { content:''; position:absolute; right:-70px; bottom:-90px; width:250px; height:250px; border:10px solid rgba(255,255,255,.13); border-radius:50%; }
+  .kit-hero img { height: 46px; filter: brightness(0) invert(1); display: block; margin-bottom: 16px; }
+  .kit-hero .kick { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; font-weight: 800; opacity: .9; }
+  .kit-hero h1 { font-size: clamp(23px,3.6vw,32px); margin: 8px 0 8px; letter-spacing: -0.03em; font-weight: 800; }
+  .kit-hero p { margin: 0; max-width: 600px; font-size: 14px; color: rgba(255,255,255,.92); line-height: 1.6; }
+
+  .kit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px,1fr)); gap: 14px; margin-bottom: 30px; }
+  .kit-card {
+    background: #fff; border: 1px solid var(--border); border-radius: 15px; padding: 18px;
+    box-shadow: var(--shadow); display: flex; flex-direction: column; transition: transform .16s ease, box-shadow .16s ease;
+  }
+  .kit-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .kit-ico { width: 44px; height: 44px; border-radius: 12px; background: var(--brand-soft); color: var(--brand-dark); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+  .kit-ico .material-symbols-outlined { font-size: 24px; }
+  .kit-card h3 { margin: 0 0 5px; font-size: 15.5px; font-weight: 800; }
+  .kit-card p { margin: 0 0 14px; font-size: 12.8px; color: var(--muted); line-height: 1.55; flex: 1; }
+  .kit-meta { font-size: 11.5px; color: var(--muted); margin-bottom: 10px; }
+  .brand-strip { display: grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); gap: 10px; margin-bottom: 26px; }
+  .brand-swatch { border-radius: 12px; padding: 14px; color: #fff; font-weight: 700; font-size: 12.5px; box-shadow: var(--shadow); }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <img src="/allstar-logo.png" alt="All Stars Music" class="brand-logo" style="height:32px;">
+        <span class="brand-divider"></span>
+        <div>
+          <div style="font-weight:800;font-size:14.5px;line-height:1.15;">Marka &amp; Materyal Merkezi</div>
+          <div style="font-size:11.5px;color:var(--muted);font-weight:600;">Baskıya hazır kurumsal materyaller</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <a class="btn btn-sm" href="/admin">Yönetici</a>
+        <a class="btn btn-sm btn-primary" href="/">Ana Sayfa</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="kit-hero">
+      <img src="/allstar-logo.png" alt="All Stars Music">
+      <div class="kick">Kurumsal Materyal Kiti</div>
+      <h1>Her şey tek yerde, baskıya hazır</h1>
+      <p>Kartvizit, kapı afişi, yaka kartı ve sosyal medya şablonları. Hepsi tarayıcıdan açılır,
+      “Yazdır / PDF” ile matbaaya gönderilebilir. Dosyaları arşive de yükleyebilirsiniz.</p>
+    </section>
+
+    <div class="brand-strip">
+      <div class="brand-swatch" style="background:#ee3623;">Marka Kırmızısı<br><span style="font-weight:600;opacity:.85;">#EE3623</span></div>
+      <div class="brand-swatch" style="background:#c1121f;">Koyu Kırmızı<br><span style="font-weight:600;opacity:.85;">#C1121F</span></div>
+      <div class="brand-swatch" style="background:#0b0d13;">Mürekkep<br><span style="font-weight:600;opacity:.85;">#0B0D13</span></div>
+      <div class="brand-swatch" style="background:#64748b;">Gri<br><span style="font-weight:600;opacity:.85;">#64748B</span></div>
+    </div>
+
+    <section class="kit-grid">
+      <article class="kit-card">
+        <div class="kit-ico"><span class="material-symbols-outlined">badge</span></div>
+        <h3>Kartvizit</h3>
+        <p>Ön/arka yüz, 85 × 55 mm, taşma payı güvenli. Yönetici ve satış ekibi için.</p>
+        <div class="kit-meta">2 yüz · matbaaya hazır PDF</div>
+        <a class="btn btn-primary" href="/marka/kartvizit.html" target="_blank">Aç &amp; Yazdır</a>
+      </article>
+
+      <article class="kit-card">
+        <div class="kit-ico"><span class="material-symbols-outlined">door_front</span></div>
+        <h3>Kapı QR Afişi</h3>
+        <p>Giriş kapısına asılır. Personel telefonuyla okutur; adım adım yönlendirme içerir.</p>
+        <div class="kit-meta">A4 / A3 · canlı QR</div>
+        <a class="btn btn-primary" href="/marka/kapi-afisi.html" target="_blank">Aç &amp; Yazdır</a>
+      </article>
+
+      <article class="kit-card">
+        <div class="kit-ico"><span class="material-symbols-outlined">qr_code_2</span></div>
+        <h3>Personel Yaka Kartı</h3>
+        <p>Kişiye özel karekodlu kart. Personel listesinden otomatik doldurulur.</p>
+        <div class="kit-meta">86 × 54 mm · 12 kart / A4</div>
+        <a class="btn btn-primary" href="/marka/yaka-karti.html" target="_blank">Aç &amp; Yazdır</a>
+      </article>
+
+      <article class="kit-card">
+        <div class="kit-ico"><span class="material-symbols-outlined">palette</span></div>
+        <h3>Marka Rehberi &amp; Sosyal Medya</h3>
+        <p>Renk paleti, tipografi, logo kullanım kuralları ve hazır gönderi/hikâye şablonları.</p>
+        <div class="kit-meta">Kare post · 9:16 hikâye</div>
+        <a class="btn btn-primary" href="/marka/marka-rehberi.html" target="_blank">Aç</a>
+      </article>
+
+      <article class="kit-card">
+        <div class="kit-ico"><span class="material-symbols-outlined">inventory_2</span></div>
+        <h3>Arşiv &amp; Depo</h3>
+        <p>Üretilen tüm materyalleri, dönem puantaj arşivlerini ve belgeleri bulutta saklayın.</p>
+        <div class="kit-meta">Yönetici paneli · kalıcı depo</div>
+        <a class="btn" href="/admin" id="goArchive">Panele Git</a>
+      </article>
+
+      <article class="kit-card">
+        <div class="kit-ico"><span class="material-symbols-outlined">print</span></div>
+        <h3>QR Kart &amp; Afiş Merkezi</h3>
+        <p>Gerçek personel verisiyle kapı afişi ve yaka kartlarını panelden tek tıkla yazdırın.</p>
+        <div class="kit-meta">Canlı veri · gerçek karekodlar</div>
+        <a class="btn" href="/admin">Panele Git</a>
+      </article>
+    </section>
+  </main>
+
+  <script src="/common.js"></script>
+  <script>
+    document.getElementById('goArchive')?.addEventListener('click', function () {
+      try { localStorage.setItem('pdks_open_tab', 'archive'); } catch (e) {}
+    });
+  </script>
+</body>
+</html>

@@ -16,21 +16,10 @@ if (fs.existsSync(dotEnvPath)) {
   }
 }
 
-const localEnvFile = '/home/user/.secrets/deploy_env.json';
-if (!process.env.DATABASE_URL && fs.existsSync(localEnvFile)) {
-  try {
-    const m = JSON.parse(fs.readFileSync(localEnvFile, 'utf8'));
-    if (m.database_url) process.env.DATABASE_URL = m.database_url;
-    if (m.neon_project_id) process.env.NEON_PROJECT_ID = m.neon_project_id;
-    if (m.neon_expires_at) process.env.NEON_EXPIRES_AT = m.neon_expires_at;
-    if (m.neon_identity_assertion) process.env.NEON_IDENTITY_ASSERTION = m.neon_identity_assertion;
-    if (!process.env.PUBLIC_URL) process.env.PUBLIC_URL = 'https://personel-pdks.vercel.app';
-  } catch {}
-}
 
 const apiHandler = require('./api/index');
 
-const PORT = Number(process.env.PORT || 4000);
+const PORT = Number(process.env.PORT || 3000);
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
 const MIME = {
@@ -59,8 +48,11 @@ const server = http.createServer((req, res) => {
 
   if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
     const htmlCandidate = filePath + '.html';
-    if (fs.existsSync(htmlCandidate)) {
+    const indexCandidate = path.join(filePath, 'index.html');
+    if (fs.existsSync(htmlCandidate) && !fs.statSync(htmlCandidate).isDirectory()) {
       filePath = htmlCandidate;
+    } else if (fs.existsSync(indexCandidate)) {
+      filePath = indexCandidate;
     } else {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       return res.end('Sayfa bulunamadı');

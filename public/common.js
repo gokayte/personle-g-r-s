@@ -115,6 +115,19 @@
     } catch {}
   }
 
+  function speakText(text) {
+    try {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'tr-TR';
+        utter.rate = 1.0;
+        utter.pitch = 1.0;
+        window.speechSynthesis.speak(utter);
+      }
+    } catch {}
+  }
+
   function formatDateTr(dateStr) {
     if (!dateStr || !dateStr.includes('-')) return dateStr || '-';
     const [y, m, d] = dateStr.split('-');
@@ -134,6 +147,7 @@
     makeQrSvg,
     toast,
     playTone,
+    speakText,
     formatDateTr,
     formatPairCode
   };

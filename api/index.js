@@ -27,6 +27,7 @@ const {
   seedSampleMeetings
 } = require('../lib/logic');
 const { buildWorkbook } = require('../lib/xlsx');
+const crypto = require('crypto');
 
 function sendJson(res, status, data) {
   const body = JSON.stringify(data);
@@ -51,7 +52,7 @@ async function parseBody(req) {
     let total = 0;
     req.on('data', (c) => {
       total += c.length;
-      if (total > 512 * 1024) {
+      if (total > 6 * 1024 * 1024) {
         reject(Object.assign(new Error('İstek boyutu çok büyük.'), { status: 413 }));
         req.destroy();
         return;
@@ -163,6 +164,116 @@ const STATUS_LABELS = {
   off_day: 'Off Day'
 };
 
+
+// ---------------- ARŞİV / DEPO YARDIMCILARI ----------------
+const ARCHIVE_CATEGORIES = [
+  { key: 'puantaj', label: 'Puantaj & Mesai' },
+  { key: 'rapor', label: 'Raporlar' },
+  { key: 'evrak', label: 'Evraklar & Sözleşmeler' },
+  { key: 'qr', label: 'QR & Baskı Materyalleri' },
+  { key: 'yedek', label: 'Yedekler' },
+  { key: 'diger', label: 'Diğer' }
+];
+
+function archiveCategoryLabel(key) {
+  const found = ARCHIVE_CATEGORIES.find((c) => c.key === key);
+  return found ? found.label : 'Diğer';
+}
+
+function safeFilename(name) {
+  const base = String(name || 'dosya')
+    .replace(/[\\/:*?"<>|\r\n]+/g, '_')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return (base || 'dosya').slice(-120);
+}
+
+function bytesToBuffer(data) {
+  if (!data) return Buffer.alloc(0);
+  if (Buffer.isBuffer(data)) return data;
+  if (data instanceof Uint8Array) return Buffer.from(data);
+  if (typeof data === 'object' && data.type === 'Buffer' && Array.isArray(data.data)) {
+    return Buffer.from(data.data);
+  }
+  if (typeof data === 'string') return Buffer.from(data.replace(/^data:[^,]*,/, ''), 'base64');
+  return Buffer.alloc(0);
+}
+
+async function buildPeriodSnapshot(fromDate, toDate, config, label) {
+  const tz = config.timezone || 'Europe/Istanbul';
+  const dayStartHour = Number(config.dayStartHour ?? 4);
+  const [startUtc] = workDateBoundsUtc(fromDate, tz, dayStartHour);
+  const [, endUtc] = workDateBoundsUtc(toDate, tz, dayStartHour);
+
+  const [empRes, punchRes] = await Promise.all([
+    query(`SELECT * FROM employees ORDER BY active DESC, name ASC`),
+    query(
+      `SELECT p.*, e.name AS employee_name, e.title AS employee_title
+       FROM punches p JOIN employees e ON e.id = p.employee_id
+       WHERE p.ts >= $1 AND p.ts < $2
+       ORDER BY p.ts ASC, p.id ASC`,
+      [startUtc.toISOString(), endUtc.toISOString()]
+    )
+  ]);
+
+  const report = buildReport({
+    employees: empRes.rows,
+    punches: punchRes.rows,
+    config,
+    fromDate,
+    toDate,
+    now: new Date()
+  });
+
+  return {
+    title: label,
+    period: fromDate.slice(0, 7),
+    fromDate,
+    toDate,
+    rowCount: Number(report?.summary?.length || 0),
+    payload: {
+      fromDate,
+      toDate,
+      generatedAt: new Date().toISOString(),
+      summary: report.summary,
+      daily: report.daily,
+      punchCount: punchRes.rows.length
+    }
+  };
+}
+
+async function saveSnapshot({ title, period, fromDate, toDate, rowCount, payload }) {
+  const checksum = sha256(JSON.stringify(payload || {}));
+  const existing = await query(`SELECT id FROM archive_snapshots WHERE period = $1`, [period]);
+  if (existing.rowCount > 0) {
+    await query(
+      `UPDATE archive_snapshots SET title = $1, from_date = $2, to_date = $3, row_count = $4,
+              payload = $5, checksum = $6, created_at = now() WHERE period = $7`,
+      [title, fromDate, toDate, rowCount, JSON.stringify(payload), checksum, period]
+    );
+    return { id: existing.rows[0].id, updated: true };
+  }
+  const ins = await query(
+    `INSERT INTO archive_snapshots(title, period, from_date, to_date, row_count, payload, checksum)
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+    [title, period, fromDate, toDate, rowCount, JSON.stringify(payload), checksum]
+  );
+  return { id: ins.rows[0]?.id, updated: false };
+}
+
+
+// ---------------- ACİL ERİŞİM (kurtarma anahtarı) ----------------
+// Vercel'de ADMIN_RECOVERY_KEY tanımlıysa, yönetici şifresi unutulduğunda
+// panelden şifre sıfırlanabilir. Anahtar tanımlı değilse uç tamamen kapalıdır.
+function recoveryKeyValid(provided) {
+  const expected = process.env.ADMIN_RECOVERY_KEY || '';
+  if (!expected || expected.length < 12) return false;
+  const a = Buffer.from(String(provided || ''));
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
 module.exports = async function handler(req, res) {
   const method = (req.method || 'GET').toUpperCase();
   const { route, queryParams } = parseReqUrl(req);
@@ -183,6 +294,7 @@ module.exports = async function handler(req, res) {
         timezone: config.timezone,
         workStart: config.workStart,
         workEnd: config.workEnd,
+        setupKeyRequired: Boolean(process.env.SETUP_KEY),
         publicBaseUrl: getPublicBaseUrl(req),
         serverTime: new Date().toISOString()
       });
@@ -193,6 +305,15 @@ module.exports = async function handler(req, res) {
         return sendJson(res, 403, { ok: false, error: 'Kurulum zaten tamamlanmış.' });
       }
       const body = await parseBody(req);
+      const expectedSetupKey = process.env.SETUP_KEY || '';
+      if (expectedSetupKey) {
+        const providedKey = String(body.setupKey || req.headers['x-setup-key'] || '');
+        const a = Buffer.from(providedKey);
+        const b = Buffer.from(expectedSetupKey);
+        if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+          return sendJson(res, 403, { ok: false, error: 'Geçersiz kurulum anahtarı (SETUP_KEY).' });
+        }
+      }
       const password = String(body.password || '');
       if (password.length < 6) {
         return sendJson(res, 400, { ok: false, error: 'Şifre en az 6 karakter olmalıdır.' });
@@ -218,6 +339,40 @@ module.exports = async function handler(req, res) {
         [sha256(token)]
       );
       return sendJson(res, 200, { ok: true, token, seededCount });
+    }
+
+    if (route === '/admin/recovery-status' && method === 'GET') {
+      const enabled = Boolean((process.env.ADMIN_RECOVERY_KEY || '').length >= 12);
+      return sendJson(res, 200, { ok: true, enabled });
+    }
+
+    if (route === '/admin/recovery-reset' && method === 'POST') {
+      if (!(process.env.ADMIN_RECOVERY_KEY || '')) {
+        return sendJson(res, 403, { ok: false, error: 'Kurtarma anahtarı tanımlı değil.' });
+      }
+      const body = await parseBody(req);
+      if (!recoveryKeyValid(body.recoveryKey)) {
+        return sendJson(res, 401, { ok: false, error: 'Kurtarma anahtarı hatalı.' });
+      }
+      const next = String(body.newPassword || '');
+      if (next.length < 6) {
+        return sendJson(res, 400, { ok: false, error: 'Yeni şifre en az 6 karakter olmalıdır.' });
+      }
+      await ensureSchema();
+      const hash = hashPassword(next);
+      const upd = await query(
+        `UPDATE settings SET value = $1::jsonb, updated_at = now() WHERE key = 'admin_auth'`,
+        [JSON.stringify({ hash, updatedAt: new Date().toISOString() })]
+      );
+      if (!upd.rowCount) {
+        await query(
+          `INSERT INTO settings(key, value, updated_at) VALUES ('admin_auth', $1::jsonb, now())`,
+          [JSON.stringify({ hash, updatedAt: new Date().toISOString() })]
+        );
+      }
+      // Tüm yönetici oturumlarını kapat
+      await query(`DELETE FROM sessions WHERE role = 'admin'`).catch(() => {});
+      return sendJson(res, 200, { ok: true, message: 'Yönetici şifresi güncellendi, tüm oturumlar kapatıldı.' });
     }
 
     if (route === '/login' && method === 'POST') {
@@ -311,6 +466,17 @@ module.exports = async function handler(req, res) {
     // --- EMPLOYEE PHONE ---
     if (route === '/phone/pair' && method === 'POST') {
       await ensureSchema();
+      const ipKey = 'pair:' + getClientIp(req);
+      const thr = await query(`SELECT * FROM login_throttle WHERE ip = $1`, [ipKey]);
+      if (thr.rowCount > 0) {
+        const row = thr.rows[0];
+        if (new Date(row.reset_at) > new Date() && row.fails >= 6) {
+          return sendJson(res, 429, {
+            ok: false,
+            error: 'Çok fazla hatalı eşleştirme denemesi. Lütfen 10 dakika sonra tekrar deneyin.'
+          });
+        }
+      }
       const body = await parseBody(req);
       const rawCode = String(body.pairCode || '').replace(/[\s-]/g, '');
       if (!rawCode) {
@@ -319,11 +485,20 @@ module.exports = async function handler(req, res) {
       const empRes = await query(`SELECT * FROM employees WHERE pair_code = $1`, [rawCode]);
       const emp = empRes.rows[0];
       if (!emp || !emp.active) {
+        await query(
+          `INSERT INTO login_throttle(ip, fails, reset_at)
+           VALUES ($1, 1, now() + interval '10 minutes')
+           ON CONFLICT (ip) DO UPDATE SET
+             fails = CASE WHEN login_throttle.reset_at < now() THEN 1 ELSE login_throttle.fails + 1 END,
+             reset_at = CASE WHEN login_throttle.reset_at < now() THEN now() + interval '10 minutes' ELSE login_throttle.reset_at END`,
+          [ipKey]
+        );
         return sendJson(res, 404, {
           ok: false,
           error: 'Geçersiz veya kullanılmış eşleştirme kodu. Yöneticinizden güncel kodu isteyin.'
         });
       }
+      await query(`DELETE FROM login_throttle WHERE ip = $1`, [ipKey]).catch(() => {});
 
       const activeSess = await query(
         `SELECT COUNT(*)::int AS c FROM sessions WHERE role = 'employee' AND employee_id = $1 AND expires_at > now()`,
@@ -417,29 +592,19 @@ module.exports = async function handler(req, res) {
 
       // Check if user scanned door key OR their own employee code
       const isDoorValid = Boolean(
-        givenKey && (
+        realSiteKey && givenKey && (
           givenKey === realSiteKey ||
           decodeURIComponent(givenKey) === realSiteKey ||
-          givenKey.includes(realSiteKey) ||
-          realSiteKey.includes(givenKey)
+          (givenKey.length >= realSiteKey.length && givenKey.includes(realSiteKey))
         )
       );
 
-      // Also allow if the employee scanned their own PDKS badge on their phone
-      let isEmpCodeValid = false;
-      const empCode = extractEmployeeQrCode(body.qr);
-      if (empCode) {
-        const empCheck = await query(`SELECT id FROM employees WHERE (code = $1 OR pair_code = $1) AND id = $2`, [
-          empCode,
-          sess.employee_id
-        ]);
-        if (empCheck.rowCount > 0) isEmpCodeValid = true;
-      }
-
-      if (!isDoorValid && !isEmpCodeValid) {
+      // Güvenlik: Telefonla okutmada yalnızca iş yeri kapısındaki QR afişi (siteKey) geçerlidir.
+      // Yaka kartları (PDKS:...) yalnızca iş yerindeki sabit Kiosk terminalinden okutulabilir.
+      if (!isDoorValid) {
         return sendJson(res, 403, {
           ok: false,
-          error: 'Geçersiz QR kodu! Lütfen iş yeri kapısındaki afişi veya kendi yaka kartınızı okutun.'
+          error: 'Geçersiz QR kodu! Telefonla giriş-çıkış için yalnızca iş yeri kapısındaki QR afişini okutabilirsiniz.'
         });
       }
 
@@ -480,9 +645,9 @@ module.exports = async function handler(req, res) {
       return sendJson(res, 200, result);
     }
 
-    // --- MEETINGS (PUBLIC / EMPLOYEE) ---
+    // --- MEETINGS (AUTHENTICATED EMPLOYEE / KIOSK / ADMIN ONLY) ---
     if (route === '/meetings' && method === 'GET') {
-      await ensureSchema();
+      await requireAuth(req, ['employee', 'kiosk', 'admin']);
       const day = queryParams.get('day');
       let sql = `SELECT * FROM meetings ORDER BY day_of_week ASC, start_time ASC`;
       let params = [];
@@ -1143,12 +1308,404 @@ module.exports = async function handler(req, res) {
       });
     }
 
+
+
+    // ---------------- TAM YEDEK (taşınabilir JSON) ----------------
+    if (route === '/admin/backup' && method === 'GET') {
+      await requireAuth(req, ['admin']);
+      const [empRes, punchRes, meetRes, setRes] = await Promise.all([
+        query(`SELECT * FROM employees ORDER BY id ASC`),
+        query(`SELECT * FROM punches ORDER BY id ASC`),
+        query(`SELECT * FROM meetings ORDER BY id ASC`),
+        query(`SELECT key, value FROM settings`)
+      ]);
+      const payload = {
+        format: 'allstars-pdks-backup',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        tables: {
+          employees: empRes.rows,
+          punches: punchRes.rows,
+          meetings: meetRes.rows,
+          settings: setRes.rows
+        }
+      };
+      const body = JSON.stringify(payload, null, 2);
+      const stamp = new Date().toISOString().slice(0, 10);
+      res.writeHead(200, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Disposition': `attachment; filename="pdks-yedek-${stamp}.json"`,
+        'Content-Length': String(Buffer.byteLength(body)),
+        'Cache-Control': 'no-store'
+      });
+      return res.end(body);
+    }
+
+    if (route === '/admin/restore' && method === 'POST') {
+      await requireAuth(req, ['admin']);
+      let data;
+      try {
+        data = await parseBody(req);
+      } catch (e) {
+        return sendJson(res, 400, { ok: false, error: 'Yedek dosyası okunamadı (geçerli JSON gerekli).' });
+      }
+      const backup = data && data.backup ? data.backup : data;
+      if (!backup || backup.format !== 'allstars-pdks-backup' || !backup.tables) {
+        return sendJson(res, 400, { ok: false, error: 'Bu dosya geçerli bir PDKS yedeği değil.' });
+      }
+      if (data.confirm !== 'GERI YUKLE' && backup.confirm !== 'GERI YUKLE') {
+        return sendJson(res, 400, { ok: false, error: 'Onay gerekli: "confirm": "GERI YUKLE" alanı eksik.' });
+      }
+      const t = backup.tables;
+      const emps = Array.isArray(t.employees) ? t.employees : [];
+      const punches = Array.isArray(t.punches) ? t.punches : [];
+      const meetings = Array.isArray(t.meetings) ? t.meetings : [];
+      const settings = Array.isArray(t.settings) ? t.settings : [];
+
+      // Mevcut veri temizlenir ve yedek yazılır.
+      await query(`DELETE FROM punches`);
+      await query(`DELETE FROM meetings`);
+      await query(`DELETE FROM employees`);
+
+      let empCount = 0;
+      for (const e of emps) {
+        await query(
+          `INSERT INTO employees(id, name, title, phone, code, pair_code, device_bound, active, is_demo, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+          [
+            Number(e.id) || null,
+            String(e.name || '').slice(0, 120),
+            String(e.title || ''),
+            String(e.phone || ''),
+            String(e.code || ''),
+            e.pair_code || null,
+            Boolean(e.device_bound),
+            e.active === undefined ? true : Boolean(e.active),
+            Boolean(e.is_demo),
+            e.created_at || new Date().toISOString()
+          ]
+        ).catch(() => {});
+        empCount += 1;
+      }
+
+      let punchCount = 0;
+      for (const p of punches) {
+        await query(
+          `INSERT INTO punches(id, employee_id, ts, type, source, note, is_demo, meta)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [
+            Number(p.id) || null,
+            Number(p.employee_id) || null,
+            p.ts,
+            p.type === 'out' ? 'out' : 'in',
+            String(p.source || 'manual'),
+            String(p.note || ''),
+            Boolean(p.is_demo),
+            JSON.stringify(p.meta || {})
+          ]
+        ).catch(() => {});
+        punchCount += 1;
+      }
+
+      let meetCount = 0;
+      for (const m of meetings) {
+        await query(
+          `INSERT INTO meetings(title, description, day_of_week, meeting_date, start_time, end_time, participants, room, color)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [
+            String(m.title || ''), String(m.description || ''), Number(m.day_of_week) || 1,
+            String(m.meeting_date || ''), String(m.start_time || '09:00'), String(m.end_time || '10:00'),
+            String(m.participants || ''), String(m.room || ''), String(m.color || 'blue')
+          ]
+        ).catch(() => {});
+        meetCount += 1;
+      }
+
+      for (const st of settings) {
+        const key = String(st.key || '');
+        if (key === 'admin_auth' || key === 'site_key' || key === 'config') continue; // güvenlik: mevcut ayarlar korunur
+        const val = typeof st.value === 'string' ? st.value : JSON.stringify(st.value);
+        await query(
+          `INSERT INTO settings(key, value, updated_at) VALUES ($1, $2, now())
+           ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
+          [key, val]
+        ).catch(() => {});
+      }
+
+      if (require('../lib/db').hasPostgresUrl()) {
+        await query(`SELECT setval(pg_get_serial_sequence('employees', 'id'), COALESCE((SELECT MAX(id) FROM employees), 1), (SELECT COUNT(*) > 0 FROM employees))`).catch(() => {});
+        await query(`SELECT setval(pg_get_serial_sequence('punches', 'id'), COALESCE((SELECT MAX(id) FROM punches), 1), (SELECT COUNT(*) > 0 FROM punches))`).catch(() => {});
+        await query(`SELECT setval(pg_get_serial_sequence('meetings', 'id'), COALESCE((SELECT MAX(id) FROM meetings), 1), (SELECT COUNT(*) > 0 FROM meetings))`).catch(() => {});
+      }
+
+      return sendJson(res, 200, {
+        ok: true,
+        restored: { employees: empCount, punches: punchCount, meetings: meetCount },
+        note: 'Yönetici şifresi ve site anahtarı korunmuştur. Personel eşleştirmeleri sıfırlanmış olabilir; gerekirse cihaz kilitlerini sıfırlayın.'
+      });
+    }
+
+    // ---------------- ARŞİV / DEPO ----------------
+    if (route === '/admin/archive/summary' && method === 'GET') {
+      await requireAuth(req, ['admin']);
+
+      // Otomatik dönem arşivi: geçen ayın arşivi yoksa kendiliğinden oluşturulur.
+      try {
+        const cfg = await getConfig();
+        const todayWd = getWorkDate(new Date(), cfg.timezone || 'Europe/Istanbul', Number(cfg.dayStartHour ?? 4));
+        const [ty, tm] = todayWd.split('-').map(Number);
+        const prev = tm === 1 ? `${ty - 1}-12` : `${ty}-${String(tm - 1).padStart(2, '0')}`;
+        const exists = await query(`SELECT id FROM archive_snapshots WHERE period = $1`, [prev]);
+        if (!exists.rowCount) {
+          const [py, pm] = prev.split('-').map(Number);
+          const lastDay = new Date(Date.UTC(py, pm, 0)).getUTCDate();
+          const autoSnap = await buildPeriodSnapshot(
+            `${prev}-01`,
+            `${prev}-${String(lastDay).padStart(2, '0')}`,
+            cfg,
+            `Dönem Arşivi ${prev}`
+          );
+          await saveSnapshot(autoSnap);
+        }
+      } catch (e) {
+        // Otomatik arşiv başarısız olsa da depo ekranı açılmaya devam eder.
+      }
+
+      const [fileRes, snapRes, sizeRes] = await Promise.all([
+        query(`SELECT COUNT(*) AS cnt FROM archive_files`),
+        query(`SELECT COUNT(*) AS cnt FROM archive_snapshots`),
+        query(`SELECT COALESCE(SUM(size_bytes), 0) AS total FROM archive_files`)
+      ]);
+      const byCat = await query(
+        `SELECT category, COUNT(*) AS cnt, COALESCE(SUM(size_bytes),0) AS bytes
+         FROM archive_files GROUP BY category`
+      );
+      const count = (r) => Number(r.rows[0]?.cnt || r.rows[0]?.count || 0);
+      return sendJson(res, 200, {
+        ok: true,
+        storage: require('../lib/db').hasPostgresUrl() ? 'PostgreSQL (kalıcı bulut)' : 'Yerel SQLite (yedek)',
+        files: count(fileRes),
+        snapshots: count(snapRes),
+        bytes: Number(sizeRes.rows[0]?.total || 0),
+        categories: ARCHIVE_CATEGORIES,
+        byCategory: byCat.rows.map((r) => ({
+          category: r.category,
+          label: archiveCategoryLabel(r.category),
+          count: Number(r.cnt || 0),
+          bytes: Number(r.bytes || 0)
+        }))
+      });
+    }
+
+    if (route === '/admin/archive/files' && method === 'GET') {
+      await requireAuth(req, ['admin']);
+      const category = String(queryParams.get('category') || '').trim();
+      const q = String(queryParams.get('q') || '').trim();
+      const limit = Math.max(1, Math.min(300, Number(queryParams.get('limit') || 120)));
+
+      const where = [];
+      const params = [];
+      if (category) {
+        params.push(category);
+        where.push(`category = $${params.length}`);
+      }
+      if (q) {
+        params.push(`%${q.toLowerCase()}%`);
+        where.push(`(LOWER(title) LIKE $${params.length} OR LOWER(tag) LIKE $${params.length} OR LOWER(period) LIKE $${params.length})`);
+      }
+      params.push(limit);
+      const sql = `SELECT id, title, category, tag, period, note, filename, mime, size_bytes,
+                          checksum, uploaded_by, created_at
+                   FROM archive_files
+                   ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+                   ORDER BY created_at DESC, id DESC
+                   LIMIT $${params.length}`;
+      const r = await query(sql, params);
+      return sendJson(res, 200, {
+        ok: true,
+        files: r.rows.map((f) => ({ ...f, categoryLabel: archiveCategoryLabel(f.category) }))
+      });
+    }
+
+    if (route === '/admin/archive/files' && method === 'POST') {
+      await requireAuth(req, ['admin']);
+      const body = await parseBody(req);
+      const filename = safeFilename(body.filename || 'dosya');
+      const buf = bytesToBuffer(body.data);
+      if (!buf.length) {
+        return sendJson(res, 400, { ok: false, error: 'Dosya içeriği boş.' });
+      }
+      if (buf.length > 4.4 * 1024 * 1024) {
+        return sendJson(res, 413, {
+          ok: false,
+          error: 'Dosya boyutu en fazla 4 MB olabilir. Daha büyük dosyalar için dönem arşivi veya harici depolama kullanın.'
+        });
+      }
+      const category = ARCHIVE_CATEGORIES.some((c) => c.key === body.category)
+        ? body.category
+        : 'diger';
+      const title = String(body.title || filename).trim().slice(0, 160) || filename;
+      const tag = String(body.tag || '').trim().slice(0, 60);
+      const period = String(body.period || '').trim().slice(0, 20);
+      const note = String(body.note || '').trim().slice(0, 500);
+      const checksum = sha256(buf.toString('base64'));
+      const mime = String(body.mime || 'application/octet-stream').slice(0, 120);
+
+      let ins;
+      if (require('../lib/db').hasPostgresUrl()) {
+        ins = await query(
+          `INSERT INTO archive_files(title, category, tag, period, note, filename, mime, size_bytes, data, checksum)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+          [title, category, tag, period, note, filename, mime, buf.length, buf, checksum]
+        );
+      } else {
+        ins = await query(
+          `INSERT INTO archive_files(title, category, tag, period, note, filename, mime, size_bytes, data, checksum)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+          [title, category, tag, period, note, filename, mime, buf.length, buf.toString('base64'), checksum]
+        );
+      }
+      return sendJson(res, 200, {
+        ok: true,
+        id: ins.rows[0]?.id,
+        file: { title, filename, category, size_bytes: buf.length, checksum }
+      });
+    }
+
+    if (route.startsWith('/admin/archive/files/') && method === 'GET') {
+      await requireAuth(req, ['admin']);
+      const id = Number(route.split('/').pop());
+      if (!id) return sendJson(res, 400, { ok: false, error: 'Geçersiz dosya.' });
+      const r = await query(`SELECT * FROM archive_files WHERE id = $1`, [id]);
+      const f = r.rows[0];
+      if (!f) return sendJson(res, 404, { ok: false, error: 'Dosya bulunamadı.' });
+      const buf = bytesToBuffer(f.data);
+      res.writeHead(200, {
+        'Content-Type': f.mime || 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${encodeURIComponent(f.filename)}"; filename*=UTF-8''${encodeURIComponent(f.filename)}`,
+        'Content-Length': String(buf.length),
+        'Cache-Control': 'no-store'
+      });
+      return res.end(buf);
+    }
+
+    if (route.startsWith('/admin/archive/files/') && method === 'DELETE') {
+      await requireAuth(req, ['admin']);
+      const id = Number(route.split('/').pop());
+      if (!id) return sendJson(res, 400, { ok: false, error: 'Geçersiz dosya.' });
+      const r = await query(`DELETE FROM archive_files WHERE id = $1`, [id]);
+      if (!r.rowCount) return sendJson(res, 404, { ok: false, error: 'Dosya bulunamadı.' });
+      return sendJson(res, 200, { ok: true });
+    }
+
+    if (route === '/admin/archive/snapshots' && method === 'GET') {
+      await requireAuth(req, ['admin']);
+      const r = await query(
+        `SELECT id, title, period, from_date, to_date, row_count, checksum, is_demo, created_at
+         FROM archive_snapshots ORDER BY period DESC`
+      );
+      return sendJson(res, 200, { ok: true, snapshots: r.rows });
+    }
+
+    if (route === '/admin/archive/snapshots' && method === 'POST') {
+      await requireAuth(req, ['admin']);
+      const body = await parseBody(req);
+      const config = await getConfig();
+      const tz = config.timezone || 'Europe/Istanbul';
+      const todayWd = getWorkDate(new Date(), tz, Number(config.dayStartHour ?? 4));
+
+      let period = String(body.period || '').trim();
+      if (!/^\d{4}-\d{2}$/.test(period)) {
+        period = todayWd.slice(0, 7);
+      }
+      const [yy, mm] = period.split('-').map(Number);
+      const lastDay = new Date(Date.UTC(yy, mm, 0)).getUTCDate();
+      const fromDate = `${period}-01`;
+      const toDate = `${period}-${String(lastDay).padStart(2, '0')}`;
+      const title = String(body.title || '').trim() || `Dönem Arşivi ${period}`;
+
+      const snap = await buildPeriodSnapshot(fromDate, toDate, config, title);
+      const saved = await saveSnapshot(snap);
+      return sendJson(res, 200, { ok: true, ...saved, period: snap.period, rowCount: snap.rowCount });
+    }
+
+    if (route.startsWith('/admin/archive/snapshots/') && route.endsWith('/excel') && method === 'GET') {
+      await requireAuth(req, ['admin']);
+      const id = Number(route.split('/')[4]);
+      const r = await query(`SELECT * FROM archive_snapshots WHERE id = $1`, [id]);
+      const snap = r.rows[0];
+      if (!snap) return sendJson(res, 404, { ok: false, error: 'Arşiv kaydı bulunamadı.' });
+      const payload = typeof snap.payload === 'string' ? JSON.parse(snap.payload) : snap.payload;
+      const summaryRows = [
+        ['Dönem', 'Personel Adı Soyadı', 'Görev / Bölüm', 'Geldiği Gün', 'Toplam Mesai',
+         'Toplam Saat (Ondalık)', 'Geç Kalma (Adet)', 'Erken Çıkış (Adet)', 'Devamsızlık (Gün)'],
+        ...(payload.summary || []).map((s) => [
+          snap.period, s.name, s.title, s.daysPresent, s.totalText,
+          Number(((s.totalMinutes || 0) / 60).toFixed(2)),
+          s.lateCount, s.earlyCount, s.absentCount
+        ])
+      ];
+      const dailyRows = [
+        ['Tarih', 'Personel', 'Görev', 'İlk Giriş', 'Son Çıkış', 'Çalışma Süresi', 'Durum'],
+        ...(payload.daily || []).map((d) => [
+          d.workDate, d.employeeName, d.employeeTitle,
+          d.firstInTime || '-', d.lastOutTime || '-', d.workedText, STATUS_LABELS[d.status] || d.status
+        ])
+      ];
+      const buf = buildWorkbook([
+        { name: 'Donem Ozeti', rows: summaryRows, widths: [10, 24, 20, 13, 16, 18, 16, 16, 16] },
+        { name: 'Gunluk Puantaj', rows: dailyRows, widths: [14, 24, 20, 12, 12, 16, 18] }
+      ]);
+      res.writeHead(200, {
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition': `attachment; filename="arsiv-${snap.period}.xlsx"`,
+        'Cache-Control': 'no-store'
+      });
+      return res.end(buf);
+    }
+
+    if (route.startsWith('/admin/archive/snapshots/') && method === 'GET') {
+      await requireAuth(req, ['admin']);
+      const id = Number(route.split('/').pop());
+      const r = await query(`SELECT * FROM archive_snapshots WHERE id = $1`, [id]);
+      const snap = r.rows[0];
+      if (!snap) return sendJson(res, 404, { ok: false, error: 'Arşiv kaydı bulunamadı.' });
+      const payload = typeof snap.payload === 'string' ? JSON.parse(snap.payload) : snap.payload;
+      return sendJson(res, 200, { ok: true, snapshot: { ...snap, payload } });
+    }
+
+    if (route === '/admin/archive/purge' && method === 'POST') {
+      await requireAuth(req, ['admin']);
+      const body = await parseBody(req);
+      const cutoff = String(body.before || '').trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(cutoff)) {
+        return sendJson(res, 400, { ok: false, error: 'Geçerli bir tarih (YYYY-AA-GG) girin.' });
+      }
+      const [y, m, d] = cutoff.split('-').map(Number);
+      const cutoffIso = new Date(Date.UTC(y, m - 1, d)).toISOString();
+      const r = await query(`DELETE FROM punches WHERE ts < $1`, [cutoffIso]);
+      return sendJson(res, 200, { ok: true, deleted: Number(r.rowCount || 0), cutoff });
+    }
+
     return sendJson(res, 404, { ok: false, error: `API uç noktası bulunamadı: ${method} ${route}` });
   } catch (err) {
-    const status = err.status || (err.code === 'NO_DB_URL' ? 503 : 500);
-    return sendJson(res, status, {
+    const rawMsg = String(err && err.message ? err.message : '');
+    const isDbIssue =
+      err.code === 'NO_DB_URL' ||
+      /unable to open database file|ECONNREFUSED|ENOTFOUND|getaddrinfo|password authentication failed|does not exist|connect ETIMEDOUT/i.test(rawMsg);
+
+    if (!isDbIssue) {
+      const status = err.status || 500;
+      return sendJson(res, status, { ok: false, error: rawMsg || 'Sunucu hatası oluştu.' });
+    }
+
+    return sendJson(res, 503, {
       ok: false,
-      error: err.message || 'Sunucu hatası oluştu.'
+      code: 'DB_NOT_READY',
+      error:
+        'Veritabanı bağlantısı henüz tanımlı değil. Vercel projesinde DATABASE_URL ortam değişkenini ' +
+        '(PostgreSQL bağlantı adresi) ekleyip yeniden dağıtın. Ayrıntı: /kurulum',
+      detail: process.env.VERCEL ? undefined : rawMsg
     });
   }
 };

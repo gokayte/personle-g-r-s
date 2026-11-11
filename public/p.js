@@ -1,5 +1,5 @@
 (function () {
-  const { apiFetch, getToken, setToken, esc, toast, playTone } = window.PDKS;
+  const { apiFetch, getToken, setToken, esc, toast, playTone, speakText } = window.PDKS;
 
   const params = new URLSearchParams(window.location.search);
   let pendingSiteKey = params.get('k') || '';
@@ -24,24 +24,35 @@
     fbBox.classList.remove('hidden');
   }
 
-  function getGeoCoords() {
-    return new Promise((resolve, reject) => {
+  function withTimeout(promise, ms, message) {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(message)), ms);
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+  }
+
+  // Konum izni penceresi hiç yanıtlanmazsa (uygulama içi tarayıcılar vb.) sayfa sonsuza kadar
+  // beklemesin: sert zaman aşımı ekliyoruz.
+  function getGeoCoords(maxMs) {
+    const geo = new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
         return reject(new Error('Tarayıcınız konum özelliğini desteklemiyor.'));
       }
       navigator.geolocation.getCurrentPosition(
         (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
         () => reject(new Error('Konum izni alınamadı. Lütfen konum izni verip tekrar deneyin.')),
-        { enableHighAccuracy: true, timeout: 10000 }
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
       );
     });
+    return withTimeout(geo, maxMs, 'Konum alınamadı (zaman aşımı). Konum iznini kontrol edip tekrar deneyin.');
   }
 
   async function submitDoorPunch({ siteKey = '', qr = '' }) {
     try {
       let coords = {};
       try {
-        coords = await getGeoCoords();
+        coords = await getGeoCoords(geoRequired ? 15000 : 3000);
       } catch (e) {
         if (geoRequired) throw e;
       }
@@ -64,14 +75,18 @@
       } else {
         const isIn = res.punch.type === 'in';
         playTone(isIn ? 'in' : 'out');
-        showFeedback(
-          isIn ? 'fb-in' : 'fb-out',
-          isIn ? 'login' : 'logout',
-          isIn ? `GİRİŞ YAPILDI (${res.punch.timeStr})` : `ÇIKIŞ YAPILDI (${res.punch.timeStr})`,
-          isIn
-            ? 'Giriş saatiniz sisteme işlendi.'
-            : `Bugünkü toplam mesai süreniz: ${res.durationText}`
-        );
+        const empName = (document.getElementById('empName')?.textContent || '').trim();
+        const firstName = empName && empName !== '-' ? empName.split(' ')[0] : '';
+
+        if (isIn) {
+          const msg = firstName ? `İyi çalışmalar, mutlu günler ${firstName}!` : 'İyi çalışmalar, mutlu günler!';
+          showFeedback('fb-in', 'login', `GİRİŞ YAPILDI (${res.punch.timeStr})`, msg);
+          if (typeof speakText === 'function') speakText(msg);
+        } else {
+          const msg = firstName ? `İyi akşamlar ${firstName}!` : 'İyi akşamlar!';
+          showFeedback('fb-out', 'logout', `ÇIKIŞ YAPILDI (${res.punch.timeStr})`, `${msg} Mesai: ${res.durationText}`);
+          if (typeof speakText === 'function') speakText(msg);
+        }
       }
       await refreshProfile(false);
     } catch (err) {
@@ -222,7 +237,7 @@
         },
         { preferredCamera: 'environment', maxScansPerSecond: 6 }
       );
-      await scanner.start();
+      await withTimeout(scanner.start(), 8000, 'Kamera açılamadı (zaman aşımı).');
     } catch {
       await stopPhoneCam();
       toast('Canlı kamera açılamadı. "Foto Çek / Yükle" butonunu kullanarak kapı QR fotoğrafını çekebilirsiniz.', 'err');
@@ -278,8 +293,6 @@
       titleEl.textContent = pub.companyName;
     }
 
-    // Herkes (evden veya işten) şirket toplantılarını görebilsin
-    loadMeetingsForPhone();
 
     if (initialPairCode && !getToken('emp')) {
       const pInp = document.getElementById('pairCodeInput');
@@ -313,7 +326,9 @@
 
   async function loadMeetingsForPhone() {
     try {
-      const res = await apiFetch('/api/meetings');
+      const role = getToken('emp') ? 'emp' : getToken('admin') ? 'admin' : '';
+      if (!role) return;
+      const res = await apiFetch('/api/meetings', { role });
       const list = res.meetings || [];
       const badge = document.getElementById('pMeetingCount');
       if (badge) badge.textContent = `${list.length} Toplantı`;

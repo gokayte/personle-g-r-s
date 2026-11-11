@@ -45,6 +45,68 @@
     modalContent.innerHTML = '';
   }
 
+
+  // --- ŞİFRE KURTARMA ---
+  document.getElementById('forgotPassBtn')?.addEventListener('click', async () => {
+    let enabled = false;
+    try {
+      const st = await apiFetch('/api/admin/recovery-status');
+      enabled = Boolean(st.enabled);
+    } catch {}
+
+    if (!enabled) {
+      openModal(`
+        <div style="font-weight:800;font-size:16px;margin-bottom:8px;">Şifre kurtarma kapalı</div>
+        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;">
+          Güvenlik için şifre sıfırlama yalnızca sunucuda <b>ADMIN_RECOVERY_KEY</b> tanımlıysa çalışır.
+          Vercel → proje → Settings → Environment Variables bölümüne en az 12 karakterlik bir kurtarma
+          anahtarı ekleyip yeniden dağıtın; ardından bu ekran şifre sıfırlamaya izin verir.
+        </p>
+        <div style="text-align:right;margin-top:10px;"><button class="btn" data-close-modal>Kapat</button></div>
+      `);
+      return;
+    }
+
+    openModal(`
+      <div style="font-weight:800;font-size:16px;margin-bottom:6px;">Yönetici Şifresini Sıfırla</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">
+        Kurtarma anahtarınızı ve yeni şifrenizi girin. Tüm açık yönetici oturumları kapatılır.
+      </p>
+      <form id="recoveryForm" style="display:flex;flex-direction:column;gap:10px;">
+        <div class="field">
+          <label>Kurtarma Anahtarı</label>
+          <input class="input" type="password" id="recoveryKeyInput" required autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Yeni Şifre (en az 6 karakter)</label>
+          <input class="input" type="password" id="recoveryNewPass" minlength="6" required autocomplete="new-password">
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button type="button" class="btn" data-close-modal>Vazgeç</button>
+          <button type="submit" class="btn btn-primary">Şifreyi Sıfırla</button>
+        </div>
+      </form>
+    `);
+
+    document.getElementById('recoveryForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await apiFetch('/api/admin/recovery-reset', {
+          method: 'POST',
+          body: {
+            recoveryKey: document.getElementById('recoveryKeyInput').value,
+            newPassword: document.getElementById('recoveryNewPass').value
+          }
+        });
+        closeModal();
+        toast('Şifre güncellendi. Yeni şifrenizle giriş yapabilirsiniz.', 'ok');
+        document.getElementById('adminPassInput').focus();
+      } catch (err) {
+        toast(err.message, 'err');
+      }
+    });
+  });
+
   modalBackdrop.addEventListener('click', (e) => {
     if (e.target === modalBackdrop || e.target.closest('[data-close-modal]')) closeModal();
   });
@@ -62,6 +124,7 @@
     if (tab === 'reports') loadReport();
     if (tab === 'meetings') loadMeetings();
     if (tab === 'employees') loadEmployees();
+    if (tab === 'archive') loadArchive();
     if (tab === 'qrcenter') renderQrCenter();
     if (tab === 'settings') loadSettingsTab();
   }
@@ -69,6 +132,329 @@
   document.getElementById('adminTabs').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-tab]');
     if (btn) switchTab(btn.getAttribute('data-tab'));
+  });
+
+
+
+  // --- TAM YEDEK / GERİ YÜKLEME ---
+  document.getElementById('downloadBackupBtn')?.addEventListener('click', async () => {
+    try {
+      const res = await apiFetch('/api/admin/backup', { role: 'admin', raw: true });
+      if (!res.ok) throw new Error('Yedek alınamadı.');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pdks-yedek-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      toast('Tam yedek indirildi. Dosyayı güvenli bir yerde saklayın.', 'ok');
+    } catch (e) {
+      toast(e.message, 'err');
+    }
+  });
+
+  document.getElementById('restoreBackupBtn')?.addEventListener('click', () => {
+    document.getElementById('restoreFileInput')?.click();
+  });
+
+  document.getElementById('restoreFileInput')?.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!confirm('DİKKAT: Mevcut personel, giriş-çıkış kayıtları ve toplantılar silinip yedekteki veriler yüklenecek. Devam edilsin mi?')) return;
+    try {
+      const text = await file.text();
+      let parsed;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        throw new Error('Dosya geçerli bir JSON değil.');
+      }
+      const res = await apiFetch('/api/admin/restore', {
+        method: 'POST',
+        role: 'admin',
+        body: { ...parsed, confirm: 'GERI YUKLE' }
+      });
+      toast(
+        `Geri yükleme tamam: ${res.restored.employees} personel, ${res.restored.punches} kayıt, ${res.restored.meetings} toplantı.`,
+        'ok'
+      );
+      loadArchive();
+    } catch (err) {
+      toast(err.message, 'err');
+    }
+  });
+
+  // --- ARŞİV & DEPO ---
+  function fmtBytes(n) {
+    const b = Number(n || 0);
+    if (b < 1024) return `${b} B`;
+    if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+    if (b < 1024 * 1024 * 1024) return `${(b / (1024 * 1024)).toFixed(2)} MB`;
+    return `${(b / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  }
+
+  function fileIcon(mime, filename) {
+    const ext = String(filename || '').split('.').pop().toLowerCase();
+    if (ext === 'pdf') return 'picture_as_pdf';
+    if (['xlsx', 'xls', 'csv'].includes(ext)) return 'table_chart';
+    if (['doc', 'docx'].includes(ext)) return 'description';
+    if (['png', 'jpg', 'jpeg', 'webp', 'svg'].includes(ext)) return 'image';
+    if (['zip', 'gz', 'rar', '7z'].includes(ext)) return 'folder_zip';
+    return 'draft';
+  }
+
+  async function loadArchive() {
+    try {
+      const sum = await apiFetch('/api/admin/archive/summary', { role: 'admin' });
+      document.getElementById('archiveStorage').textContent = 'Depo: ' + (sum.storage || 'PostgreSQL');
+      document.getElementById('archiveSnapCount').textContent = sum.snapshots || 0;
+      document.getElementById('archiveFileCount').textContent = sum.files || 0;
+      document.getElementById('archiveUsedBytes').textContent = fmtBytes(sum.bytes);
+    } catch (e) {
+      toast(e.message, 'err');
+    }
+    loadSnapshots();
+    loadArchiveFiles();
+  }
+
+  async function loadSnapshots() {
+    const box = document.getElementById('snapshotList');
+    try {
+      const res = await apiFetch('/api/admin/archive/snapshots', { role: 'admin' });
+      const list = res.snapshots || [];
+      if (!list.length) {
+        box.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:10px 0;">Henüz dönem arşivi yok. Yukarıdan bir ay seçip “Arşive Al” butonuna basın.</div>`;
+        return;
+      }
+      box.innerHTML = list
+        .map(
+          (s) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);">
+          <div style="min-width:0;">
+            <div style="font-weight:700;font-size:13.5px;">${esc(s.title || 'Dönem Arşivi')}</div>
+            <div style="font-size:11.5px;color:var(--muted);">
+              ${esc(s.from_date)} → ${esc(s.to_date)} · ${s.row_count} personel ·
+              ${new Date(s.created_at).toLocaleString('tr-TR')}
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            <button class="btn btn-sm" data-snap-xlsx="${s.id}" title="Excel indir">
+              <span class="material-symbols-outlined" style="font-size:16px;">download</span>
+            </button>
+            <button class="btn btn-sm" data-snap-view="${s.id}" title="Detay">
+              <span class="material-symbols-outlined" style="font-size:16px;">visibility</span>
+            </button>
+          </div>
+        </div>`
+        )
+        .join('');
+    } catch (e) {
+      box.innerHTML = `<div style="color:var(--red);font-size:13px;">${esc(e.message)}</div>`;
+    }
+  }
+
+  async function loadArchiveFiles() {
+    const body = document.getElementById('archiveFilesBody');
+    const cat = document.getElementById('archiveCatFilter')?.value || '';
+    const q = document.getElementById('archiveSearch')?.value || '';
+    try {
+      const res = await apiFetch(
+        `/api/admin/archive/files?category=${encodeURIComponent(cat)}&q=${encodeURIComponent(q)}`,
+        { role: 'admin' }
+      );
+      const files = res.files || [];
+      if (!files.length) {
+        body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:22px;font-size:13px;">Depoda dosya bulunmuyor.</td></tr>`;
+        return;
+      }
+      body.innerHTML = files
+        .map(
+          (f) => `
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:7px;font-weight:600;font-size:13.5px;">
+              <span class="material-symbols-outlined" style="font-size:18px;color:var(--primary);">${fileIcon(f.mime, f.filename)}</span>
+              <span>${esc(f.title)}</span>
+            </div>
+          </td>
+          <td><span class="badge badge-neutral" style="font-size:11px;">${esc(f.categoryLabel || f.category)}</span></td>
+          <td style="font-size:12.5px;color:var(--muted);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(f.filename)}</td>
+          <td style="font-size:12.5px;">${fmtBytes(f.size_bytes)}</td>
+          <td style="font-size:12.5px;">${esc(f.period || '-')}</td>
+          <td style="font-size:12px;color:var(--muted);">${new Date(f.created_at).toLocaleString('tr-TR')}</td>
+          <td style="text-align:right;white-space:nowrap;">
+            <button class="btn btn-sm" data-file-dl="${f.id}" title="İndir">
+              <span class="material-symbols-outlined" style="font-size:16px;">download</span>
+            </button>
+            <button class="btn btn-sm btn-danger" data-file-del="${f.id}" title="Sil">
+              <span class="material-symbols-outlined" style="font-size:16px;">delete</span>
+            </button>
+          </td>
+        </tr>`
+        )
+        .join('');
+    } catch (e) {
+      body.innerHTML = `<tr><td colspan="7" style="color:var(--red);padding:16px;">${esc(e.message)}</td></tr>`;
+    }
+  }
+
+  document.getElementById('snapshotForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const period = document.getElementById('snapshotPeriod').value;
+    try {
+      const res = await apiFetch('/api/admin/archive/snapshots', {
+        method: 'POST',
+        role: 'admin',
+        body: { period }
+      });
+      toast(res.updated ? `${res.period} arşivi güncellendi.` : `${res.period} dönemi arşive alındı.`, 'ok');
+      loadArchive();
+    } catch (err) {
+      toast(err.message, 'err');
+    }
+  });
+
+  document.getElementById('uploadForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('uploadFile');
+    const file = input.files?.[0];
+    if (!file) return;
+    if (file.size > 4 * 1024 * 1024) {
+      return toast('Dosya 4 MB sınırını aşıyor.', 'err');
+    }
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    try {
+      const dataUrl = await new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(String(fr.result));
+        fr.onerror = () => reject(new Error('Dosya okunamadı.'));
+        fr.readAsDataURL(file);
+      });
+      await apiFetch('/api/admin/archive/files', {
+        method: 'POST',
+        role: 'admin',
+        body: {
+          filename: file.name,
+          mime: file.type || 'application/octet-stream',
+          title: document.getElementById('uploadTitle').value || file.name,
+          category: document.getElementById('uploadCategory').value,
+          period: document.getElementById('uploadPeriod').value,
+          data: dataUrl
+        }
+      });
+      toast('Dosya depoya yüklendi.', 'ok');
+      e.target.reset();
+      loadArchive();
+    } catch (err) {
+      toast(err.message, 'err');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById('archiveCatFilter')?.addEventListener('change', loadArchiveFiles);
+  document.getElementById('archiveSearch')?.addEventListener('input', () => {
+    clearTimeout(state.archiveSearchTimer);
+    state.archiveSearchTimer = setTimeout(loadArchiveFiles, 300);
+  });
+
+  document.getElementById('tab-archive')?.addEventListener('click', async (e) => {
+    const dl = e.target.closest('[data-file-dl]');
+    if (dl) {
+      const id = dl.getAttribute('data-file-dl');
+      try {
+        const res = await apiFetch(`/api/admin/archive/files/${id}`, { role: 'admin', raw: true });
+        const blob = await res.blob();
+        const cd = res.headers.get('content-disposition') || '';
+        const m = /filename\*=UTF-8''([^;]+)/.exec(cd) || /filename="([^"]+)"/.exec(cd);
+        const name = m ? decodeURIComponent(m[1]) : 'dosya';
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+      } catch (err) {
+        toast(err.message || 'İndirme başarısız.', 'err');
+      }
+      return;
+    }
+
+    const del = e.target.closest('[data-file-del]');
+    if (del) {
+      if (!confirm('Bu dosya depodan kalıcı olarak silinsin mi?')) return;
+      try {
+        await apiFetch(`/api/admin/archive/files/${del.getAttribute('data-file-del')}`, {
+          method: 'DELETE',
+          role: 'admin'
+        });
+        toast('Dosya silindi.', 'ok');
+        loadArchive();
+      } catch (err) {
+        toast(err.message, 'err');
+      }
+      return;
+    }
+
+    const xl = e.target.closest('[data-snap-xlsx]');
+    if (xl) {
+      const id = xl.getAttribute('data-snap-xlsx');
+      try {
+        const res = await apiFetch(`/api/admin/archive/snapshots/${id}/excel`, { role: 'admin', raw: true });
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `arsiv-${id}.xlsx`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+      } catch (err) {
+        toast(err.message || 'İndirme başarısız.', 'err');
+      }
+      return;
+    }
+
+    const view = e.target.closest('[data-snap-view]');
+    if (view) {
+      const id = view.getAttribute('data-snap-view');
+      try {
+        const res = await apiFetch(`/api/admin/archive/snapshots/${id}`, { role: 'admin' });
+        const p = res.snapshot.payload || {};
+        const rows = (p.summary || [])
+          .map(
+            (s) => `
+          <tr>
+            <td>${esc(s.name)}</td>
+            <td>${esc(s.title || '-')}</td>
+            <td style="text-align:center;">${s.daysPresent}</td>
+            <td style="text-align:right;font-weight:700;">${esc(s.totalText || '0 sa')}</td>
+            <td style="text-align:center;">${s.lateCount}</td>
+            <td style="text-align:center;">${s.absentCount}</td>
+          </tr>`
+          )
+          .join('');
+        openModal(`
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div style="font-weight:800;font-size:16px;">${esc(res.snapshot.title)}</div>
+            <button class="btn btn-sm" data-close-modal>Kapat</button>
+          </div>
+          <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">
+            ${esc(res.snapshot.from_date)} → ${esc(res.snapshot.to_date)} ·
+            ${res.snapshot.row_count} personel · ${(p.punchCount || 0)} okutma kaydı
+          </div>
+          <div class="table-wrap" style="max-height:50vh;overflow:auto;">
+            <table>
+              <thead><tr><th>Personel</th><th>Görev</th><th>Gün</th><th>Mesai</th><th>Geç</th><th>Devamsız</th></tr></thead>
+              <tbody>${rows || '<tr><td colspan="6" style="text-align:center;color:var(--muted);">Kayıt yok</td></tr>'}</tbody>
+            </table>
+          </div>`);
+      } catch (err) {
+        toast(err.message, 'err');
+      }
+    }
   });
 
   // --- OVERVIEW ---
@@ -1194,7 +1580,15 @@
   function startApp() {
     authView.classList.add('hidden');
     appView.classList.remove('hidden');
-    switchTab('overview');
+    let initialTab = 'overview';
+    try {
+      const pending = localStorage.getItem('pdks_open_tab');
+      if (pending && document.getElementById('tab-' + pending)) {
+        initialTab = pending;
+        localStorage.removeItem('pdks_open_tab');
+      }
+    } catch (e) {}
+    switchTab(initialTab);
     clearInterval(state.pollTimer);
     state.pollTimer = setInterval(() => {
       if (!document.hidden && state.tab === 'overview' && getToken('admin')) {
@@ -1226,6 +1620,7 @@
         body: {
           companyName: document.getElementById('setupCompanyInput').value,
           password: document.getElementById('setupPassInput').value,
+          setupKey: document.getElementById('setupKeyInput')?.value || '',
           seedDemo: document.getElementById('setupSeedCheck').checked
         }
       });
@@ -1241,6 +1636,9 @@
     window.__showAdminLoginGate = () => showLoginGate(false);
     const pub = await apiFetch('/api/public-info').catch(() => null);
     if (pub && !pub.setupDone) {
+      if (pub.setupKeyRequired) {
+        document.getElementById('setupKeyFieldWrap')?.classList.remove('hidden');
+      }
       showLoginGate(true);
       return;
     }

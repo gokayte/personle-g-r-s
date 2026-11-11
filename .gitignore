@@ -6,3 +6,8 @@ node_modules/
 *.db-shm
 *.db-wal
 *.log
+.neon
+.env.local
+.env*.local
+# Neon CLI / ajan araçları
+.codex/
