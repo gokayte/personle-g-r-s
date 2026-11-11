@@ -461,5 +461,45 @@
     });
   }
 
+  // --- DOĞRUDAN UYGULAMA İÇİ KAREKOD OKUTMA & DIŞ GÖREV DİNLİYİCİLERİ ---
+  const scanQrDirectBtn = document.getElementById('btnScanQrDirect');
+  const outsideDutyBtn = document.getElementById('btnOutsideDuty');
+
+  if (scanQrDirectBtn) {
+    scanQrDirectBtn.addEventListener('click', () => {
+      // Uygulama içerisindeki kamerayı anında açar
+      const camCard = document.getElementById('qrScannerCard');
+      if (camCard) {
+        camCard.classList.remove('hidden');
+        camCard.scrollIntoView({ behavior: 'smooth' });
+      }
+      const openCamBtn = document.getElementById('openPhoneCamBtn');
+      if (openCamBtn) openCamBtn.click();
+    });
+  }
+
+  if (outsideDutyBtn) {
+    outsideDutyBtn.addEventListener('click', async () => {
+      if (!confirm('Ofis dışı görev / dış toplantı çıkış kaydınızı GPS konumunuzla onaylıyor musunuz?')) return;
+      try {
+        let coords = {};
+        try {
+          coords = await getGeoCoords(8000);
+        } catch (e) {
+          console.warn('GPS alinamadi:', e.message);
+        }
+        const res = await apiFetch('/api/phone/duty', {
+          method: 'POST',
+          role: 'emp',
+          body: { ...coords }
+        });
+        toast(res.message || 'Ofis dışı görev başarıyla kaydedildi!', 'ok');
+        await refreshProfile(false);
+      } catch (err) {
+        toast(err.message, 'err');
+      }
+    });
+  }
+
   init();
 })();

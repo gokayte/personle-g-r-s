@@ -583,6 +583,34 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    // --- OFİS DIŞI GÖREV / DIŞ TOPLANTI ÇIKIŞI ---
+    if (route === '/phone/duty' && method === 'POST') {
+      const sess = await requireAuth(req, ['employee']);
+      const body = await parseBody(req);
+      const meta = { duty: true, dutyType: 'Ofis Dışı Görev / Dış Toplantı' };
+      if (body.lat && body.lng) {
+        const lat = Number(body.lat);
+        const lng = Number(body.lng);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          meta.lat = lat;
+          meta.lng = lng;
+          meta.mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+        }
+      }
+      const result = await recordPunch({
+        employeeId: sess.employee_id,
+        forcedType: 'out',
+        source: 'duty',
+        note: 'Ofis Dışı Görev / Toplantı Çıkışı',
+        meta
+      });
+      return sendJson(res, 200, {
+        ok: true,
+        message: 'Ofis dışı görev çıkışınız GPS konumuyla kaydedildi.',
+        ...result
+      });
+    }
+
     if (route === '/phone/punch' && method === 'POST') {
       const sess = await requireAuth(req, ['employee']);
       const body = await parseBody(req);
