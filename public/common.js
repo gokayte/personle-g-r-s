@@ -117,15 +117,22 @@
 
   function speakText(text) {
     try {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = 'tr-TR';
-        utter.rate = 1.0;
-        utter.pitch = 1.0;
-        window.speechSynthesis.speak(utter);
-      }
-    } catch {}
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'tr-TR';
+      utter.rate = 0.95;
+      utter.pitch = 1.0;
+      utter.volume = 1.0;
+
+      const voices = window.speechSynthesis.getVoices();
+      const trVoice = voices.find(v => v.lang && v.lang.startsWith('tr'));
+      if (trVoice) utter.voice = trVoice;
+
+      window.speechSynthesis.speak(utter);
+    } catch (e) {
+      console.warn('Ses çalınamadı:', e);
+    }
   }
 
   function formatDateTr(dateStr) {

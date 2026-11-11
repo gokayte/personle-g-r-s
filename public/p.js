@@ -383,5 +383,67 @@
     } catch {}
   }
 
+  const openAddBtn = document.getElementById('openAddMeetingBtn');
+  const addForm = document.getElementById('addMeetingForm');
+  const cancelAddBtn = document.getElementById('cancelAddMeetingBtn');
+
+  if (openAddBtn && addForm) {
+    openAddBtn.addEventListener('click', () => {
+      addForm.classList.toggle('hidden');
+      if (!addForm.classList.contains('hidden')) {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const dateInput = document.getElementById('mDate');
+        if (dateInput && !dateInput.value) dateInput.value = todayStr;
+        document.getElementById('mTitle')?.focus();
+      }
+    });
+  }
+
+  if (cancelAddBtn && addForm) {
+    cancelAddBtn.addEventListener('click', () => {
+      addForm.classList.add('hidden');
+    });
+  }
+
+  if (addForm) {
+    addForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        const title = document.getElementById('mTitle').value.trim();
+        const meetingDate = document.getElementById('mDate').value;
+        const room = document.getElementById('mRoom').value.trim();
+        const startTime = document.getElementById('mStartTime').value;
+        const endTime = document.getElementById('mEndTime').value;
+        const participants = document.getElementById('mParticipants').value.trim();
+
+        let dayOfWeek = 1;
+        if (meetingDate) {
+          dayOfWeek = new Date(meetingDate + 'T12:00:00').getDay();
+        }
+
+        await apiFetch('/api/meetings', {
+          method: 'POST',
+          role: 'emp',
+          body: {
+            title,
+            meetingDate,
+            dayOfWeek,
+            startTime,
+            endTime,
+            participants,
+            room
+          }
+        });
+
+        toast('Toplantı başarıyla eklendi!', 'ok');
+        addForm.reset();
+        addForm.classList.add('hidden');
+        await loadMeetingsForPhone();
+      } catch (err) {
+        toast(err.message, 'err');
+      }
+    });
+  }
+
   init();
 })();

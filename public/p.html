@@ -131,8 +131,8 @@
         </button>
       </div>
 
-      <!-- QR Scanner Section -->
-      <div class="card" style="margin-bottom:16px;">
+      <!-- QR Scanner Section (Opsiyonel / Gizli) -->
+      <div class="card hidden" id="qrScannerCard" style="margin-bottom:16px;">
         <div style="font-weight:700;font-size:15px;margin-bottom:6px;">Giriş-Çıkış Karekodunu Okut</div>
         <p style="font-size:13px;color:var(--muted);margin:0 0 12px;line-height:1.45;">
           Kapıdaki afişi kameranızı açarak taratabilir veya anında fotoğrafını çekip sisteme işleyebilirsiniz:
@@ -163,14 +163,57 @@
 
       <!-- Meetings Program (Visible to paired employees) -->
       <div class="card" style="margin-top:4px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <div style="font-weight:700;font-size:15px;display:flex;align-items:center;gap:6px;">
-          <span class="material-symbols-outlined" style="font-size:18px;color:var(--primary);">calendar_month</span>
-          <span>Şirket Toplantı Takvimi</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div style="font-weight:700;font-size:15px;display:flex;align-items:center;gap:6px;">
+            <span class="material-symbols-outlined" style="font-size:18px;color:var(--primary);">calendar_month</span>
+            <span>Şirket Toplantı Takvimi</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span id="pMeetingCount" class="badge badge-neutral" style="font-size:11px;font-weight:600;">0 Toplantı</span>
+            <button id="openAddMeetingBtn" type="button" class="btn btn-sm btn-primary" style="padding:4px 9px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:4px;">
+              <span class="material-symbols-outlined" style="font-size:16px;">add</span> Ekle
+            </button>
+          </div>
         </div>
-        <span id="pMeetingCount" class="badge badge-neutral" style="font-size:11px;font-weight:600;">0 Toplantı</span>
-      </div>
-      <div id="pMeetingList" style="display:flex;flex-direction:column;gap:10px;font-size:13px;"></div>
+
+        <!-- Add Meeting Form (Collapsible) -->
+        <form id="addMeetingForm" class="hidden" style="background:var(--surface-2);padding:14px;border-radius:12px;margin-bottom:14px;border:1px solid var(--border);display:flex;flex-direction:column;gap:10px;">
+          <div style="font-weight:700;font-size:13.5px;color:var(--text);">Yeni Toplantı Planla</div>
+          <div class="field">
+            <label style="font-size:12px;font-weight:600;">Toplantı Konusu / Başlık *</label>
+            <input class="input" id="mTitle" placeholder="Örn: Haftalık Değerlendirme" required style="font-size:13px;padding:8px 10px;">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div class="field">
+              <label style="font-size:12px;font-weight:600;">Tarih</label>
+              <input class="input" type="date" id="mDate" style="font-size:13px;padding:8px 10px;">
+            </div>
+            <div class="field">
+              <label style="font-size:12px;font-weight:600;">Oda / Yer</label>
+              <input class="input" id="mRoom" placeholder="Toplantı Odası" style="font-size:13px;padding:8px 10px;">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div class="field">
+              <label style="font-size:12px;font-weight:600;">Başlangıç Saati</label>
+              <input class="input" type="time" id="mStartTime" value="10:00" style="font-size:13px;padding:8px 10px;">
+            </div>
+            <div class="field">
+              <label style="font-size:12px;font-weight:600;">Bitiş Saati</label>
+              <input class="input" type="time" id="mEndTime" value="11:00" style="font-size:13px;padding:8px 10px;">
+            </div>
+          </div>
+          <div class="field">
+            <label style="font-size:12px;font-weight:600;">Katılımcılar</label>
+            <input class="input" id="mParticipants" placeholder="Ekip, Yöneticiler vb." style="font-size:13px;padding:8px 10px;">
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;">
+            <button type="button" id="cancelAddMeetingBtn" class="btn btn-sm" style="background:#fff;">Vazgeç</button>
+            <button type="submit" class="btn btn-sm btn-primary">Kaydet</button>
+          </div>
+        </form>
+
+        <div id="pMeetingList" style="display:flex;flex-direction:column;gap:10px;font-size:13px;"></div>
       </div>
     </section>
   </main>

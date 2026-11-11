@@ -645,7 +645,7 @@ module.exports = async function handler(req, res) {
       return sendJson(res, 200, result);
     }
 
-    // --- MEETINGS (AUTHENTICATED EMPLOYEE / KIOSK / ADMIN ONLY) ---
+    // --- MEETINGS (AUTHENTICATED EMPLOYEE / KIOSK / ADMIN) ---
     if (route === '/meetings' && method === 'GET') {
       await requireAuth(req, ['employee', 'kiosk', 'admin']);
       const day = queryParams.get('day');
@@ -657,6 +657,30 @@ module.exports = async function handler(req, res) {
       }
       const r = await query(sql, params);
       return sendJson(res, 200, { ok: true, meetings: r.rows });
+    }
+
+    if (route === '/meetings' && method === 'POST') {
+      await requireAuth(req, ['employee', 'admin']);
+      const body = await parseBody(req);
+      const title = String(body.title || '').trim();
+      if (!title) {
+        return sendJson(res, 400, { ok: false, error: 'Toplantı konusu / başlığı zorunludur.' });
+      }
+      const dayOfWeek = Number(body.dayOfWeek ?? 1);
+      const meetingDate = String(body.meetingDate || '').trim();
+      const startTime = String(body.startTime || '10:00').trim();
+      const endTime = String(body.endTime || '11:00').trim();
+      const participants = String(body.participants || '').trim();
+      const room = String(body.room || '').trim();
+      const description = String(body.description || '').trim();
+      const color = String(body.color || 'blue').trim();
+
+      const ins = await query(
+        `INSERT INTO meetings(title, description, day_of_week, meeting_date, start_time, end_time, participants, room, color)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+        [title, description, dayOfWeek, meetingDate, startTime, endTime, participants, room, color]
+      );
+      return sendJson(res, 200, { ok: true, meeting: ins.rows[0] });
     }
 
     // --- ADMIN ROUTES ---
