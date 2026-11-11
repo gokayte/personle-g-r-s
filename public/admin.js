@@ -113,12 +113,13 @@
 
   function switchTab(tab) {
     state.tab = tab;
-    document.querySelectorAll('#adminTabs .tab-btn').forEach((b) => {
+    document.querySelectorAll('#adminTabs [data-tab]').forEach((b) => {
       b.classList.toggle('active', b.getAttribute('data-tab') === tab);
     });
     document.querySelectorAll('.tab-pane').forEach((p) => {
       p.classList.toggle('hidden', p.id !== `tab-${tab}`);
     });
+    closeSidebar();
     if (tab === 'overview') loadOverview();
     if (tab === 'punches') loadPunches();
     if (tab === 'reports') loadReport();
@@ -129,7 +130,26 @@
     if (tab === 'settings') loadSettingsTab();
   }
 
-  document.getElementById('adminTabs').addEventListener('click', (e) => {
+  const sidebar = document.getElementById('adminSidebar');
+  const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+  const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
+  const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+
+  function openSidebar() {
+    if (sidebar) sidebar.classList.add('open');
+    if (sidebarBackdrop) sidebarBackdrop.classList.remove('hidden');
+  }
+
+  function closeSidebar() {
+    if (sidebar) sidebar.classList.remove('open');
+    if (sidebarBackdrop) sidebarBackdrop.classList.add('hidden');
+  }
+
+  if (toggleSidebarBtn) toggleSidebarBtn.addEventListener('click', openSidebar);
+  if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', closeSidebar);
+  if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebar);
+
+  document.getElementById('adminTabs')?.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-tab]');
     if (btn) switchTab(btn.getAttribute('data-tab'));
   });

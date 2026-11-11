@@ -57,41 +57,70 @@
 
   <!-- Main Admin App -->
   <div id="adminAppView" class="hidden">
+    <!-- Mobile Header with Hamburger Menu -->
     <header class="topbar no-print">
-      <div class="container">
-        <div class="topbar-inner">
+      <div class="container topbar-inner" style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button id="toggleSidebarBtn" class="btn btn-sm" type="button" style="display:flex;align-items:center;justify-content:center;padding:8px 10px;" aria-label="Menüyü Aç">
+            <span class="material-symbols-outlined" style="font-size:22px;">menu</span>
+          </button>
           <div class="brand">
-            <img src="/allstar-logo.png" alt="All Stars Music" class="brand-logo">
+            <img src="/allstar-logo.png" alt="All Stars Music" class="brand-logo" style="height:28px;">
             <span class="brand-divider"></span>
             <div>
-              <div id="navCompanyName" style="line-height:1.15;font-size:14.5px;">All Stars Music</div>
-              <div style="font-size:11.5px;font-weight:500;color:var(--muted);" id="navWorkHours">Mesai: 09:00 - 18:00</div>
+              <div id="navCompanyName" style="line-height:1.15;font-size:14px;font-weight:800;">All Stars Music</div>
+              <div style="font-size:11px;font-weight:500;color:var(--muted);" id="navWorkHours">Mesai: 09:00 - 18:00</div>
             </div>
             <span class="live-pill"><span class="live-dot"></span> Canlı</span>
           </div>
-
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <a href="/marka" target="_blank" class="btn btn-sm"><span class="material-symbols-outlined" style="font-size:16px;">palette</span> Marka Kiti</a>
-            <button id="launchKioskBtn" class="btn btn-sm"><span class="material-symbols-outlined" style="font-size:16px;">devices</span> Kiosk Ekranı</button>
-            <button id="refreshNowBtn" class="btn btn-sm"><span class="material-symbols-outlined" style="font-size:16px;">refresh</span> Yenile</button>
-            <button id="adminLogoutBtn" class="btn btn-sm"><span class="material-symbols-outlined" style="font-size:16px;">logout</span> Çıkış</button>
-          </div>
         </div>
 
-        <nav class="nav-tabs" id="adminTabs">
-          <button class="tab-btn active" data-tab="overview">Canlı Durum</button>
-          <button class="tab-btn" data-tab="punches">Giriş-Çıkış Kayıtları</button>
-          <button class="tab-btn" data-tab="reports">Mesai & Puantaj Raporu</button>
-          <button class="tab-btn" data-tab="meetings"><span class="material-symbols-outlined" style="font-size:16px;">event</span> Toplantı Takvimi</button>
-          <button class="tab-btn" data-tab="employees">Personeller (Eşleştirme)</button>
-          <button class="tab-btn" data-tab="archive"><span class="material-symbols-outlined" style="font-size:16px;">inventory_2</span> Arşiv &amp; Depo</button>
-          <button class="tab-btn" data-tab="qrcenter">QR Kartlar & Afiş</button>
-          <button class="tab-btn" data-tab="settings">Ayarlar</button>
-        </nav>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button id="refreshNowBtn" class="btn btn-sm" title="Yenile"><span class="material-symbols-outlined" style="font-size:17px;">refresh</span></button>
+          <button id="adminLogoutBtn" class="btn btn-sm" title="Çıkış"><span class="material-symbols-outlined" style="font-size:17px;">logout</span></button>
+        </div>
       </div>
     </header>
 
-    <main class="container" style="padding-top:16px;padding-bottom:48px;">
+    <div class="admin-layout">
+      <!-- Sol Cep / Sidebar Menü -->
+      <aside id="adminSidebar" class="admin-sidebar no-print">
+        <div class="sidebar-header">
+          <span style="font-size:11px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);">Yönetim Menüsü</span>
+          <button id="closeSidebarBtn" class="sidebar-close-btn" type="button"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <nav class="sidebar-nav" id="adminTabs">
+          <button class="sidebar-link active" data-tab="overview">
+            <span class="material-symbols-outlined">dashboard</span> Canlı Durum
+          </button>
+          <button class="sidebar-link" data-tab="punches">
+            <span class="material-symbols-outlined">history</span> Giriş-Çıkış Kayıtları
+          </button>
+          <button class="sidebar-link" data-tab="reports">
+            <span class="material-symbols-outlined">analytics</span> Mesai &amp; Puantaj Raporu
+          </button>
+          <button class="sidebar-link" data-tab="meetings">
+            <span class="material-symbols-outlined">event</span> Toplantı Takvimi
+          </button>
+          <button class="sidebar-link" data-tab="employees">
+            <span class="material-symbols-outlined">badge</span> Personeller (Eşleştirme)
+          </button>
+          <button class="sidebar-link" data-tab="archive">
+            <span class="material-symbols-outlined">inventory_2</span> Arşiv &amp; Depo
+          </button>
+          <button class="sidebar-link" data-tab="qrcenter">
+            <span class="material-symbols-outlined">qr_code_2</span> QR Kartlar &amp; Afiş
+          </button>
+          <button class="sidebar-link" data-tab="settings">
+            <span class="material-symbols-outlined">settings</span> Ayarlar
+          </button>
+        </nav>
+      </aside>
+      <div id="sidebarBackdrop" class="sidebar-backdrop hidden"></div>
+
+      <!-- Sağ İçerik Alanı -->
+      <main class="admin-main">
+        <div class="container" style="max-width:1080px;margin:0 auto;padding:16px 12px 48px;">
       <!-- Contextual Banners -->
       <div id="demoBanner" class="banner banner-info no-print hidden">
         <div>
@@ -685,7 +714,9 @@
           </div>
         </div>
       </section>
-    </main>
+        </div>
+      </main>
+    </div>
   </div>
 
   <!-- MODAL: ADD/EDIT MEETING -->

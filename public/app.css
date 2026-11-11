@@ -645,59 +645,148 @@ tbody tr:hover { background: #fbfcfd; }
 }
 .tab-pane:not(.hidden) { animation: asmFadeUp 0.22s ease both; }
 
-/* ============ ADMIN MOBİL UYUMLULUK ============ */
-@media (max-width: 768px) {
-  .topbar-inner {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    padding: 10px 0;
+/* ============ ADMIN YAN MENÜ (SIDEBAR) & MOBİL DÜZEN ============ */
+.admin-layout {
+  display: flex;
+  min-height: calc(100vh - 65px);
+  position: relative;
+}
+
+.admin-sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border-right: 1px solid var(--border);
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.sidebar-close-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 4px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #334155;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sidebar-link:hover {
+  background: #f1f5f9;
+  color: var(--text);
+}
+
+.sidebar-link.active {
+  background: var(--brand-soft);
+  color: var(--brand);
+  border-color: rgba(238, 54, 35, 0.2);
+  font-weight: 700;
+}
+
+.sidebar-link .material-symbols-outlined {
+  font-size: 19px;
+}
+
+.admin-main {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg);
+  overflow-x: hidden;
+}
+
+.admin-main .container {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+/* Tablo ve Kart Düzeni (Ekranın taşmasını ve büyümesini önler) */
+.table-wrap, .table-responsive {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Mobil Çekmece (Sidebar Drawer) */
+@media (max-width: 860px) {
+  .admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    z-index: 100;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    transform: translateX(-100%);
+    transition: transform 0.25s ease-in-out;
   }
-  .topbar-inner > div {
-    justify-content: space-between;
-    width: 100%;
+  .admin-sidebar.open {
+    transform: translateX(0);
   }
-  .nav-tabs {
-    display: flex;
-    overflow-x: auto;
-    white-space: nowrap;
-    padding-bottom: 6px;
-    -webkit-overflow-scrolling: touch;
-    gap: 6px;
+  .sidebar-close-btn {
+    display: inline-flex;
   }
-  .nav-tabs::-webkit-scrollbar {
-    height: 4px;
-  }
-  .nav-tabs::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 4px;
-  }
-  .tab-btn {
-    padding: 8px 12px;
-    font-size: 13px;
-    flex-shrink: 0;
-  }
-  .table-responsive, .table-wrap, table {
-    display: block;
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(2px);
+    z-index: 90;
   }
   .kpi-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 10px !important;
   }
-  .card {
-    padding: 14px !important;
-    border-radius: 14px !important;
-  }
-  .btn {
-    padding: 9px 12px;
-    font-size: 13.5px;
+  .split-grid {
+    grid-template-columns: 1fr !important;
   }
 }
+
 @media (max-width: 480px) {
   .kpi-grid {
     grid-template-columns: 1fr !important;
+  }
+  .card {
+    padding: 14px !important;
   }
 }
