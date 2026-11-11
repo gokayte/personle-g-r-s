@@ -117,22 +117,45 @@
 
   function speakText(text) {
     try {
-      if (!('speechSynthesis' in window)) return;
-      window.speechSynthesis.cancel();
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.lang = 'tr-TR';
-      utter.rate = 0.95;
-      utter.pitch = 1.0;
-      utter.volume = 1.0;
+      // 1. Web Speech API (Safari / Chrome)
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'tr-TR';
+        utter.rate = 1.0;
+        utter.pitch = 1.0;
+        utter.volume = 1.0;
 
-      const voices = window.speechSynthesis.getVoices();
-      const trVoice = voices.find(v => v.lang && v.lang.startsWith('tr'));
-      if (trVoice) utter.voice = trVoice;
+        const voices = window.speechSynthesis.getVoices();
+        const trVoice = voices.find((v) => v.lang && (v.lang === 'tr-TR' || v.lang.startsWith('tr')));
+        if (trVoice) utter.voice = trVoice;
 
-      window.speechSynthesis.speak(utter);
+        window.speechSynthesis.speak(utter);
+      }
+
+      // 2. Yedek Ses Çözümü (iOS Safari sessiz mod / API kilitlerine karşı ses efekti)
+      playTone('in');
     } catch (e) {
-      console.warn('Ses çalınamadı:', e);
+      console.warn('Ses motoru uyarısı:', e);
     }
+  }
+
+  // iOS Safari ilk kullanıcı dokunuşunda ses sentezini uyandırır
+  if (typeof window !== 'undefined') {
+    const unlockAudio = () => {
+      try {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.resume();
+          const u = new SpeechSynthesisUtterance('');
+          u.volume = 0;
+          window.speechSynthesis.speak(u);
+        }
+      } catch (e) {}
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+    };
+    window.addEventListener('click', unlockAudio, { once: true });
+    window.addEventListener('touchstart', unlockAudio, { once: true });
   }
 
   function formatDateTr(dateStr) {
