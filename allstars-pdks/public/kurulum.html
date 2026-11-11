@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>All Stars Music — Kurulum Kontrol Listesi</title>
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/app.css">
+<style>
+  .wrap { max-width: 820px; margin: 0 auto; padding: 22px 16px 60px; }
+  .card-step { display: flex; gap: 14px; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: #fff; margin-bottom: 12px; box-shadow: var(--shadow); }
+  .num { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(145deg,#ee3623,#c1121f); color:#fff; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size: 14px; }
+  .card-step h3 { margin: 0 0 5px; font-size: 15px; }
+  .card-step p { margin: 0 0 8px; font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .card-step code { background: #0b0d13; color: #fca5a5; padding: 2px 7px; border-radius: 6px; font-size: 12px; }
+  .status { border-radius: 14px; padding: 18px; margin-bottom: 18px; border: 1px solid #fde68a; background: #fffbeb; color: #92400e; font-size: 13.5px; line-height: 1.6; }
+  .status.ok { border-color: #a7f3d0; background: #ecfdf5; color: #047857; }
+  .status.err { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
+  pre { background: #0b0d13; color: #e2e8f0; padding: 12px 14px; border-radius: 10px; overflow-x: auto; font-size: 12px; line-height: 1.6; }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <img src="/allstar-logo.png" alt="All Stars Music" class="brand-logo" style="height:32px;">
+        <span class="brand-divider"></span>
+        <div>
+          <div style="font-weight:800;font-size:14.5px;">Kurulum Kontrol Listesi</div>
+          <div style="font-size:11.5px;color:var(--muted);font-weight:600;">Veritabanı bağlantısı ve ilk kurulum</div>
+        </div>
+      </div>
+      <a class="btn btn-sm btn-primary" href="/">Ana Sayfa</a>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div id="statusBox" class="status">Sistem durumu kontrol ediliyor…</div>
+
+    <div class="card-step">
+      <div class="num">1</div>
+      <div>
+        <h3>Ücretsiz PostgreSQL açın (Neon)</h3>
+        <p><b>neon.com/sign-up</b> → GitHub ile giriş (kart bilgisi istenmez) → proje adı <code>allstars-pdks</code> →
+        <b>Connect</b> → connection string'i kopyalayın: <code>postgresql://...</code></p>
+      </div>
+    </div>
+
+    <div class="card-step">
+      <div class="num">2</div>
+      <div>
+        <h3>Vercel'e bağlantı adresini ekleyin</h3>
+        <p>Vercel → <b>allstars-pdks</b> → Settings → Environment Variables → <code>DATABASE_URL</code> =
+        kopyaladığınız adres (Production + Preview + Development). Kaydedin.</p>
+      </div>
+    </div>
+
+    <div class="card-step">
+      <div class="num">3</div>
+      <div>
+        <h3>Yeniden dağıtın</h3>
+        <p>Deployments → en üstteki dağıtım → ⋯ → <b>Redeploy</b>. Ya da repodan tek komut:</p>
+        <pre>VERCEL_TOKEN=... DATABASE_URL="postgresql://..." ./scripts/deploy.sh</pre>
+      </div>
+    </div>
+
+    <div class="card-step">
+      <div class="num">4</div>
+      <div>
+        <h3>İlk kurulumu yapın</h3>
+        <p>Bu adresten yönetici şifrenizi belirleyin: <a href="/admin" style="color:#c1121f;font-weight:700;">/admin → Kurulum</a>.
+        Ardından sistemi doğrulayın:</p>
+        <pre>node scripts/smoke.js http://localhost:3000 'YONETICI_SIFRESI'</pre>
+      </div>
+    </div>
+
+    <div class="card-step">
+      <div class="num">5</div>
+      <div>
+        <h3>Depo ve arşiv hazır</h3>
+        <p>Bağlantı kurulduğunda tüm geçmiş kayıtlar PostgreSQL'de tutulur; <b>Arşiv &amp; Depo</b> sekmesinden
+        aylık puantaj dondurma, belge yükleme ve tam yedek alınabilir.</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      var box = document.getElementById('statusBox');
+      fetch('/api/health').then(function (r) { return r.json(); }).then(function (h) {
+        if (h.ok && h.setupDone) {
+          box.className = 'status ok';
+          box.innerHTML = '<b>✔ Sistem çalışıyor ve kurulu.</b> Veritabanı bağlantısı aktif, yönetici şifresi tanımlı.';
+        } else if (h.ok) {
+          box.className = 'status';
+          box.innerHTML = '<b>Veritabanı bağlı, kurulum bekliyor.</b> <a href="/admin" style="color:#92400e;font-weight:700;">Yönetici şifresini belirlemek için tıklayın</a>.';
+        } else {
+          box.className = 'status err';
+          box.innerHTML = '<b>Veritabanı bağlı değil.</b> ' + (h.error || '') +
+            '<br>Yukarıdaki 1–3 adımları tamamlayıp sayfayı yenileyin.';
+        }
+      }).catch(function () {
+        box.className = 'status err';
+        box.textContent = 'Sunucuya ulaşılamadı.';
+      });
+    })();
+  </script>
+</body>
+</html>

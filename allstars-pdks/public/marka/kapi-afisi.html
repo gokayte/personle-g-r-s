@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>All Stars Music — Kapı QR Afişi (A3 / A4)</title>
+<style>
+  @page { size: A4 portrait; margin: 0; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; background: #eef1f5; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 22px; color: #0b0d13; }
+  .toolbar { max-width: 820px; margin: 0 auto 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .toolbar h1 { font-size: 18px; margin: 0; letter-spacing: -0.02em; }
+  .toolbar p { margin: 4px 0 0; font-size: 12.5px; color: #64748b; }
+  .print-btn { background: linear-gradient(145deg,#ee3623,#c1121f); color:#fff; border:0; border-radius:10px; padding:11px 18px; font-weight:700; font-size:13.5px; cursor:pointer; box-shadow:0 8px 20px rgba(224,43,22,.25); }
+  .field { display: flex; gap: 8px; align-items: center; background: #fff; padding: 10px 12px; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 13px; }
+  .field input { border: 1px solid #e2e8f0; border-radius: 8px; padding: 7px 9px; font-size: 13px; width: 130px; }
+
+  .poster {
+    width: 210mm; min-height: 297mm; margin: 0 auto; background: #fff; position: relative; overflow: hidden;
+    box-shadow: 0 18px 46px rgba(15,23,42,.18); display: flex; flex-direction: column;
+  }
+  .poster-top {
+    background: linear-gradient(140deg,#ee3623 0%,#c1121f 60%,#7f1010 100%);
+    color: #fff; padding: 16mm 16mm 14mm; position: relative; overflow: hidden;
+  }
+  .poster-top::after {
+    content:''; position:absolute; right:-26mm; top:-26mm; width:86mm; height:86mm; border:2.4mm solid rgba(255,255,255,.13); border-radius:50%;
+  }
+  .poster-logo { height: 22mm; filter: brightness(0) invert(1); display: block; margin-bottom: 8mm; }
+  .poster-kicker { font-size: 9pt; letter-spacing: .22em; text-transform: uppercase; font-weight: 800; opacity: .9; }
+  .poster-title { font-size: 26pt; font-weight: 800; letter-spacing: -0.03em; line-height: 1.08; margin-top: 3mm; }
+  .poster-sub { font-size: 11pt; opacity: .95; margin-top: 3mm; max-width: 130mm; line-height: 1.5; }
+
+  .poster-body { flex: 1; padding: 12mm 16mm 8mm; display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .qr-frame {
+    padding: 7mm; border: 1.2mm solid #0b0d13; border-radius: 6mm; background: #fff; margin-top: 2mm;
+    box-shadow: 0 10px 26px rgba(15,23,42,.12);
+  }
+  #qrBox { width: 104mm; height: 104mm; display: flex; align-items: center; justify-content: center; }
+  #qrBox svg { width: 100%; height: 100%; }
+  .qr-caption { margin-top: 7mm; font-size: 15pt; font-weight: 800; letter-spacing: -0.02em; }
+  .qr-caption span { color: #c1121f; }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6mm; width: 100%; margin-top: 10mm; }
+  .step { background: #f8fafc; border: .4mm solid #e2e8f0; border-radius: 4mm; padding: 5mm 4mm; text-align: left; }
+  .step .no { display: inline-flex; align-items: center; justify-content: center; width: 7mm; height: 7mm; border-radius: 2mm; background: #0b0d13; color: #fff; font-size: 9pt; font-weight: 800; margin-bottom: 3mm; }
+  .step b { display: block; font-size: 10pt; margin-bottom: 1.5mm; }
+  .step p { margin: 0; font-size: 8.6pt; color: #64748b; line-height: 1.45; }
+
+  .poster-foot {
+    background: #0b0d13; color: #fff; padding: 8mm 16mm; display: flex; justify-content: space-between; align-items: center; gap: 8mm;
+    font-size: 9.5pt;
+  }
+  .poster-foot .big { font-weight: 800; font-size: 11.5pt; letter-spacing: -0.01em; }
+  .poster-foot .muted { color: #94a3b8; font-size: 8.6pt; margin-top: 1mm; }
+  .poster-foot .code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 9pt; color: #fca5a5; letter-spacing: .06em; }
+  @media print {
+    body { background: #fff; padding: 0; }
+    .toolbar { display: none !important; }
+    .poster { box-shadow: none; width: 210mm; min-height: 297mm; }
+  }
+</style>
+</head>
+<body>
+  <div class="toolbar">
+    <div>
+      <h1>Kapı QR Afişi</h1>
+      <p>A4 · kapı girişine asılır · personel telefonuyla okutur (kişiye özel QR ile aynı işlevi görür)</p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <label class="field">Şirket adı <input id="companyInput" value="All Stars Music"></label>
+      <button class="print-btn" onclick="window.print()">Yazdır / PDF</button>
+    </div>
+  </div>
+
+  <div class="poster" id="poster">
+    <div class="poster-top">
+      <img class="poster-logo" src="/allstar-logo.png" alt="All Stars Music">
+      <div class="poster-kicker">Personel Giriş-Çıkış Sistemi</div>
+      <div class="poster-title">Giriş ve çıkışlarınızı<br>telefonunuzdan okutun</div>
+      <div class="poster-sub">İş yerine giriş ve çıkışta bu karekodu telefonunuzun kamerasıyla okutmanız yeterlidir.</div>
+    </div>
+
+    <div class="poster-body">
+      <div class="qr-frame"><div id="qrBox"></div></div>
+      <div class="qr-caption">Karekodu <span>telefon kameranızla</span> okutun</div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="no">1</div>
+          <b>Telefonunuzu eşleştirin</b>
+          <p>Yöneticinizden aldığınız 6 haneli kodu bir kez girin.</p>
+        </div>
+        <div class="step">
+          <div class="no">2</div>
+          <b>Karekodu okutun</b>
+          <p>Kapıdaki bu afişi kamerayla taratın; sistem otomatik algılar.</p>
+        </div>
+        <div class="step">
+          <div class="no">3</div>
+          <b>Onayı görün</b>
+          <p>Giriş/çıkış saatiniz ekranda görünür ve kaydedilir.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="poster-foot">
+      <div>
+        <div class="big" id="footCompany">All Stars Music</div>
+        <div class="muted">Personel Devam Kontrol Sistemi · Giriş-Çıkış Karekodu</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="code" id="footCode">PDKS-DOOR</div>
+        <div class="muted">Bu afişi yönetici panelinden güncelleyebilirsiniz</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/common.js"></script>
+  <script src="/vendor/qrcode.js"></script>
+  <script>
+    (function () {
+      var qrBox = document.getElementById('qrBox');
+
+      function render(text) {
+        if (typeof window.qrcode !== 'function') {
+          qrBox.textContent = 'QR yüklenemedi';
+          return;
+        }
+        var qr = window.qrcode(0, 'M');
+        qr.addData(String(text));
+        qr.make();
+        qrBox.innerHTML = qr.createSvgTag({ cellSize: 6, margin: 0, scalable: true });
+        document.getElementById('footCode').textContent = String(text).slice(0, 46);
+      }
+
+      // Kapı QR'ı: yönetici oturumu açıksa gerçek kapı anahtarını (?k=...) kullanır
+      var base = window.location.origin;
+      var adminToken = localStorage.getItem('pdks_admin_token') || '';
+      var headers = adminToken ? { Authorization: 'Bearer ' + adminToken } : {};
+      Promise.all([
+        fetch('/api/public-info').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
+        adminToken ? fetch('/api/admin/overview', { headers: headers }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }) : Promise.resolve(null)
+      ]).then(function (res) {
+        var info = res[0];
+        var ov = res[1];
+        if (ov && ov.publicBaseUrl) base = ov.publicBaseUrl;
+        else if (info && info.publicBaseUrl) base = info.publicBaseUrl;
+        var comp = (ov && ov.config && ov.config.companyName) || (info && info.companyName);
+        if (comp) {
+          document.getElementById('companyInput').value = comp;
+          document.getElementById('footCompany').textContent = comp;
+        }
+        if (ov && ov.siteKey) {
+          render(base + '/p?k=' + encodeURIComponent(ov.siteKey));
+        } else {
+          render(base + '/p');
+        }
+      }).catch(function () {
+        render(base + '/p');
+      });
+
+      document.getElementById('companyInput').addEventListener('input', function (e) {
+        document.getElementById('footCompany').textContent = e.target.value || 'All Stars Music';
+      });
+    })();
+  </script>
+</body>
+</html>

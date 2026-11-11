@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>All Stars Music — Marka Rehberi &amp; Sosyal Medya Şablonları</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 26px 18px 60px; background: #f4f6f9; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #0b0d13; }
+  .wrap { max-width: 1020px; margin: 0 auto; }
+  header.page { display: flex; justify-content: space-between; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+  header.page h1 { margin: 0; font-size: 22px; letter-spacing: -0.02em; }
+  header.page p { margin: 5px 0 0; font-size: 13px; color: #64748b; }
+  .chip { background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 700; color: #b91c1c; }
+  h2.sec { font-size: 14px; text-transform: uppercase; letter-spacing: .08em; color: #64748b; margin: 34px 0 12px; font-weight: 800; }
+
+  .swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .sw { border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 6px 18px rgba(15,23,42,.08); }
+  .sw .c { height: 84px; }
+  .sw .m { padding: 9px 11px; }
+  .sw .n { font-size: 12.5px; font-weight: 700; }
+  .sw .h { font-size: 11.5px; color: #64748b; font-family: ui-monospace, Menlo, monospace; }
+
+  .type-card { background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 6px 18px rgba(15,23,42,.07); }
+  .type-card .row { display: flex; align-items: baseline; gap: 14px; padding: 9px 0; border-bottom: 1px dashed #e8ecf1; }
+  .type-card .row:last-child { border-bottom: 0; }
+  .type-card .lbl { width: 130px; flex-shrink: 0; font-size: 11.5px; color: #94a3b8; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+
+  .socials { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .post { border-radius: 14px; overflow: hidden; box-shadow: 0 12px 30px rgba(15,23,42,.12); background: #fff; }
+
+  /* Kare post 1: duyuru */
+  .sq { aspect-ratio: 1 / 1; position: relative; display: flex; flex-direction: column; justify-content: space-between;
+        background: radial-gradient(circle at 80% 8%, rgba(255,255,255,.2), transparent 46%), linear-gradient(140deg,#ee3623,#c1121f 62%,#7f1010); color: #fff; padding: 26px; overflow: hidden; }
+  .sq::after { content:''; position:absolute; right:-52px; bottom:-58px; width: 190px; height: 190px; border: 8px solid rgba(255,255,255,.14); border-radius: 50%; }
+  .sq .logo { height: 30px; filter: brightness(0) invert(1); }
+  .sq .kick { font-size: 10.5px; letter-spacing: .2em; text-transform: uppercase; font-weight: 800; opacity: .9; }
+  .sq h3 { margin: 7px 0 0; font-size: 27px; line-height: 1.08; letter-spacing: -0.03em; font-weight: 800; }
+  .sq p { margin: 9px 0 0; font-size: 13px; line-height: 1.5; color: rgba(255,255,255,.9); max-width: 240px; }
+  .sq .pill { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.3); border-radius: 999px; padding: 6px 13px; font-size: 11.5px; font-weight: 700; margin-top: 14px; }
+
+  /* Kare post 2: açık zemin */
+  .sq.light { background: #fff; color: #0b0d13; }
+  .sq.light::after { border-color: rgba(224,43,22,.14); }
+  .sq.light .logo { filter: none; }
+  .sq.light h3 { color: #0b0d13; }
+  .sq.light p { color: #475569; }
+  .sq.light .kick { color: #c1121f; }
+  .sq.light .pill { background: #fff1ee; border-color: #fbd5cc; color: #b91c1c; }
+
+  /* Hikaye 9:16 */
+  .story { aspect-ratio: 9 / 16; max-width: 260px; position: relative; display: flex; flex-direction: column; justify-content: space-between; padding: 22px;
+           background: linear-gradient(170deg,#0b0d13 0%, #22131a 55%, #6d1410 100%); color: #fff; overflow: hidden; }
+  .story::before { content:''; position:absolute; inset:auto -40px -70px -40px; height: 240px;
+                   background: radial-gradient(ellipse at 50% 100%, rgba(238,54,35,.55), transparent 70%); }
+  .story .logo { height: 26px; filter: brightness(0) invert(1); }
+  .story h3 { margin: 0; font-size: 24px; line-height: 1.1; letter-spacing: -0.03em; font-weight: 800; }
+  .story p { margin: 8px 0 0; font-size: 12px; color: #cbd5e1; line-height: 1.5; }
+  .story .cta { background: #ee3623; border-radius: 10px; text-align: center; padding: 11px; font-weight: 800; font-size: 12.5px; margin-top: 14px; }
+
+  .caption { padding: 13px 15px; font-size: 12.5px; color: #475569; line-height: 1.6; background: #fff; }
+  .caption b { color: #0b0d13; }
+  .caption .tags { display: block; margin-top: 6px; color: #b91c1c; font-weight: 600; font-size: 12px; }
+
+  .rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .rule { background: #fff; border-radius: 12px; padding: 15px 16px; box-shadow: 0 6px 18px rgba(15,23,42,.06); font-size: 12.8px; line-height: 1.65; color: #475569; }
+  .rule b { display: block; color: #0b0d13; margin-bottom: 4px; font-size: 13px; }
+  .no { color: #b91c1c; font-weight: 700; }
+  .yes { color: #047857; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="page">
+    <div>
+      <h1>All Stars Music — Marka Rehberi</h1>
+      <p>Logo kullanımı, renk paleti, tipografi ve hazır sosyal medya şablonları</p>
+    </div>
+    <span class="chip">Sürüm 1.0 · 2026</span>
+  </header>
+
+  <h2 class="sec">Renk Paleti</h2>
+  <div class="swatches">
+    <div class="sw"><div class="c" style="background:#ee3623"></div><div class="m"><div class="n">Marka Kırmızısı</div><div class="h">#EE3623</div></div></div>
+    <div class="sw"><div class="c" style="background:#c1121f"></div><div class="m"><div class="n">Koyu Kırmızı</div><div class="h">#C1121F</div></div></div>
+    <div class="sw"><div class="c" style="background:#0b0d13"></div><div class="m"><div class="n">Mürekkep</div><div class="h">#0B0D13</div></div></div>
+    <div class="sw"><div class="c" style="background:#64748b"></div><div class="m"><div class="n">Gri</div><div class="h">#64748B</div></div></div>
+    <div class="sw"><div class="c" style="background:#f8fafc;border-bottom:1px solid #e2e8f0"></div><div class="m"><div class="n">Zemin</div><div class="h">#F8FAFC</div></div></div>
+    <div class="sw"><div class="c" style="background:#047857"></div><div class="m"><div class="n">Onay Yeşili</div><div class="h">#047857</div></div></div>
+  </div>
+
+  <h2 class="sec">Tipografi</h2>
+  <div class="type-card">
+    <div class="row"><div class="lbl">Başlık 800</div><div style="font-size:26px;font-weight:800;letter-spacing:-0.03em;">Personel Giriş-Çıkış Sistemi</div></div>
+    <div class="row"><div class="lbl">Alt Başlık 700</div><div style="font-size:17px;font-weight:700;">Karekodla saniyeler içinde giriş</div></div>
+    <div class="row"><div class="lbl">Gövde 500</div><div style="font-size:14px;font-weight:500;color:#475569;">Telefonunuzu bir kez eşleştirin, sonrasında kapıdaki karekodu okutmanız yeterli.</div></div>
+    <div class="row"><div class="lbl">Etiket 600</div><div style="font-size:11.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#c1121f;">ALL STARS MUSIC · İSTANBUL</div></div>
+  </div>
+
+  <h2 class="sec">Sosyal Medya Şablonları</h2>
+  <div class="socials">
+    <div>
+      <div class="post">
+        <div class="sq">
+          <img class="logo" src="/allstar-logo.png" alt="All Stars Music">
+          <div>
+            <div class="kick">Yeni sistem</div>
+            <h3>Giriş-çıkış artık<br>telefonla</h3>
+            <p>Karekod okut, mesain otomatik kaydedilsin. Kağıt puantaj defteri tarihe karıştı.</p>
+            <span class="pill">QR ile devam kontrolü</span>
+          </div>
+        </div>
+      </div>
+      <div class="caption">
+        <b>Kare gönderi (1080×1080)</b> — yeni sistemi duyurmak için.
+        <span class="tags">#AllStarsMusic #PDKS #PersonelTakip</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="post">
+        <div class="sq light">
+          <img class="logo" src="/allstar-logo.png" alt="All Stars Music">
+          <div>
+            <div class="kick">Ekip içi</div>
+            <h3>Mesai, izin ve<br>rapor tek ekranda</h3>
+            <p>Yönetici paneliyle günlük puantaj, geç kalma ve devamsızlık raporları anında hazır.</p>
+            <span class="pill">Aylık Excel çıktısı</span>
+          </div>
+        </div>
+      </div>
+      <div class="caption">
+        <b>Kare gönderi (1080×1080)</b> — yönetici/kariyer duyuruları için açık zemin versiyonu.
+        <span class="tags">#İnsanKaynakları #Puantaj #Verimlilik</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="post" style="display:flex;justify-content:center;background:#0b0d13;padding:14px;">
+        <div class="story">
+          <img class="logo" src="/allstar-logo.png" alt="All Stars Music">
+          <div>
+            <h3>Kapıda 3 saniye,<br>kayıtta hatası yok</h3>
+            <p>Telefonunu eşleştir, karekodu okut. Gerisi otomatik.</p>
+            <div class="cta">Nasıl çalışır? →</div>
+          </div>
+        </div>
+      </div>
+      <div class="caption">
+        <b>Hikâye (1080×1920)</b> — kısa tanıtım / “nasıl çalışır” serisi.
+        <span class="tags">#AllStarsMusic #ZamanYönetimi</span>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="sec">Kullanım Kuralları</h2>
+  <div class="rules">
+    <div class="rule">
+      <b>Logo alanı</b>
+      Logonun çevresinde, logo yüksekliğinin en az <b>1/2’si</b> kadar boşluk bırakın. Başka bir öğeyle üst üste bindirmeyin.
+    </div>
+    <div class="rule">
+      <b>Kırmızı zemin</b>
+      Kırmızı zemin üzerinde yalnızca <span class="yes">beyaz (mono)</span> logo kullanın; asla siyah veya gri.
+    </div>
+    <div class="rule">
+      <b>Yapmayın</b>
+      Logoyu <span class="no">esnetmeyin</span>, <span class="no">döndürmeyin</span>, gölge/çerçeve eklemeyin, yeniden renklendirmeyin.
+    </div>
+    <div class="rule">
+      <b>Minimum boyut</b>
+      Dijitalde en az <b>90 px</b> genişlik, baskıda en az <b>20 mm</b> genişlik.
+    </div>
+    <div class="rule">
+      <b>Birlikte kullanım</b>
+      Farklı marka logolarıyla aynı hizada kullanırken aradaki mesafe logo yüksekliğinin en az 1 katı olmalı.
+    </div>
+    <div class="rule">
+      <b>Arşiv</b>
+      Tüm materyaller <b>Yönetici Paneli → Arşiv &amp; Depo</b> alanına “QR &amp; Baskı Materyalleri” kategorisiyle yüklenebilir.
+    </div>
+  </div>
+</div>
+</body>
+</html>

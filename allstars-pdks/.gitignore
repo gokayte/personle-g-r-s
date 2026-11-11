@@ -1,0 +1,13 @@
+node_modules/
+.env
+.vercel/
+.DS_Store
+*.db
+*.db-shm
+*.db-wal
+*.log
+.neon
+.env.local
+.env*.local
+# Neon CLI / ajan araçları
+.codex/

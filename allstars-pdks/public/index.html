@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All Stars Music — Personel Giriş-Çıkış & Mesai Takip</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    .hero-banner {
+      margin: 22px 0 26px;
+      padding: 40px 26px 34px;
+      border-radius: 22px;
+      text-align: center;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(238, 54, 35, 0.24), transparent 62%),
+        linear-gradient(145deg, #0b0d13 0%, #151924 60%, #1f1418 100%);
+      color: #f8fafc;
+      box-shadow: 0 16px 38px rgba(15, 23, 42, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .hero-logo-wrap { display: flex; justify-content: center; margin: 0 auto 18px; }
+    .hero-logo {
+      display: block;
+      width: min(100%, 400px);
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 6px 22px rgba(238, 54, 35, 0.25));
+    }
+    .hero-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #fca5a5;
+      background: rgba(238, 54, 35, 0.16);
+      border: 1px solid rgba(238, 54, 35, 0.35);
+      padding: 5px 13px;
+      border-radius: 999px;
+      margin-bottom: 12px;
+    }
+    .hero-banner h1 {
+      font-size: clamp(21px, 3.2vw, 30px);
+      font-weight: 800;
+      margin: 6px 0 10px;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+    }
+    .hero-banner p {
+      color: #cbd5e1;
+      max-width: 620px;
+      margin: 0 auto;
+      font-size: 14.5px;
+      line-height: 1.55;
+    }
+    .clock-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.09);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #fff;
+      padding: 9px 18px;
+      border-radius: 14px;
+      font-weight: 600;
+      font-size: 13.5px;
+      margin-top: 22px;
+    }
+    .clock-bar strong { font-size: 17px; font-weight: 800; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+    .clock-sep { width: 1px; height: 20px; background: rgba(255, 255, 255, 0.2); }
+
+    .role-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(272px, 1fr));
+      gap: 16px;
+      margin: 8px 0 34px;
+    }
+    .role-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow);
+      transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+    }
+    .role-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.1);
+      border-color: #cbd5e1;
+    }
+    .role-card.primary { border-color: rgba(238, 54, 35, 0.35); box-shadow: 0 10px 26px rgba(238, 54, 35, 0.1); }
+    .role-icon {
+      width: 46px; height: 46px;
+      border-radius: 13px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--blue-bg); color: var(--primary);
+      margin-bottom: 14px;
+    }
+    .role-card.primary .role-icon { background: rgba(238, 54, 35, 0.1); color: #ee3623; }
+    .role-icon .material-symbols-outlined { font-size: 26px; }
+    .role-card h2 { margin: 0 0 6px; font-size: 17px; font-weight: 800; letter-spacing: -0.01em; }
+    .role-card p { margin: 0 0 16px; font-size: 13px; color: var(--muted); line-height: 1.5; flex: 1; }
+    .role-card .btn { justify-content: center; }
+    .role-note { margin-top: 10px; font-size: 11.5px; color: var(--muted); text-align: center; }
+
+    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 34px; }
+    .step { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+    .step-no {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 26px; height: 26px; border-radius: 8px;
+      background: #0f172a; color: #fff; font-size: 12.5px; font-weight: 800; margin-bottom: 10px;
+    }
+    .step h3 { margin: 0 0 4px; font-size: 14px; font-weight: 700; }
+    .step p { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+
+    .site-footer {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 6px 0 44px;
+    }
+    .site-footer a { color: var(--primary); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <img src="/allstar-logo.png" alt="All Stars Music" class="brand-logo" style="height:32px;">
+        <span class="brand-divider"></span>
+        <div>
+          <div class="brand-name" id="companyTitle" style="font-weight:800;font-size:14.5px;line-height:1.15;letter-spacing:-0.01em;">All Stars Music</div>
+          <div style="font-size:11.5px;color:var(--muted);font-weight:600;">Personel Giriş-Çıkış Sistemi</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="live-pill"><span class="live-dot"></span> Canlı</span>
+        <a class="btn btn-sm" href="/admin">
+          <span class="material-symbols-outlined" style="font-size:17px;">admin_panel_settings</span> Yönetici
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero-banner">
+      <div class="hero-logo-wrap">
+        <img src="/allstar-logo.png" alt="All Stars Music" class="hero-logo">
+      </div>
+      <div class="hero-kicker">
+        <span class="material-symbols-outlined" style="font-size:15px;">qr_code_scanner</span>
+        Karekod Tabanlı Devam Kontrol
+      </div>
+      <h1 id="heroTitle">Personel Giriş-Çıkış &amp; Mesai Takibi</h1>
+      <p>
+        Telefonunuzun kamerasıyla kapıdaki karekodu okutun; giriş ve çıkışlarınız anında kaydedilsin.
+        Herkes kendi internet bağlantısıyla, bulunduğu yerden sisteme erişebilir.
+      </p>
+      <div class="clock-bar">
+        <span id="liveDate">--</span>
+        <span class="clock-sep"></span>
+        <strong id="liveClock">--:--:--</strong>
+        <span class="clock-sep"></span>
+        <span style="opacity:0.85;font-weight:600;">İstanbul</span>
+      </div>
+    </section>
+
+    <section class="role-grid">
+      <article class="role-card primary">
+        <div class="role-icon"><span class="material-symbols-outlined">smartphone</span></div>
+        <h2>Personel Girişi</h2>
+        <p>
+          Kendi telefonunuzla giriş-çıkış yapın. Telefonunuzu bir kez 6 haneli kodla eşleştirin,
+          sonrasında kapıdaki karekodu okutmanız yeterli.
+        </p>
+        <a class="btn btn-primary" href="/p" style="padding:12px;font-size:14.5px;">
+          <span class="material-symbols-outlined" style="font-size:18px;">login</span> Telefonla Giriş Yap
+        </a>
+        <div class="role-note">İnternet bağlantınız olan her yerden çalışır</div>
+      </article>
+
+      <article class="role-card">
+        <div class="role-icon"><span class="material-symbols-outlined">tablet_mac</span></div>
+        <h2>Kapı Terminali</h2>
+        <p>
+          İş yeri girişindeki tablet, telefon veya bilgisayarın kamerasını karekod okuyucu olarak kullanın.
+          USB barkod okuyucu da desteklenir.
+        </p>
+        <a class="btn" href="/kiosk" style="padding:12px;font-size:14.5px;background:#fff;border-color:var(--border);">
+          <span class="material-symbols-outlined" style="font-size:18px;">sensors</span> Terminali Aç
+        </a>
+        <div class="role-note">İş yeri kapısında sürekli açık bırakılabilir</div>
+      </article>
+
+      <article class="role-card">
+        <div class="role-icon"><span class="material-symbols-outlined">admin_panel_settings</span></div>
+        <h2>Yönetici Paneli</h2>
+        <p>
+          Canlı içerideki personel listesi, puantaj raporları, mesai ayarları, personel yönetimi,
+          QR afiş ve yaka kartı çıktıları ve Excel dışa aktarma.
+        </p>
+        <a class="btn" href="/admin" style="padding:12px;font-size:14.5px;background:#fff;border-color:var(--border);">
+          <span class="material-symbols-outlined" style="font-size:18px;">lock</span> Panele Giriş
+        </a>
+        <div class="role-note">Yönetici şifresi gereklidir</div>
+      </article>
+    </section>
+
+    <section class="steps">
+      <div class="step">
+        <div class="step-no">1</div>
+        <h3>Kodunuzu alın</h3>
+        <p>Yöneticiniz size 6 haneli bir eşleştirme kodu veya doğrudan bağlantı iletir.</p>
+      </div>
+      <div class="step">
+        <div class="step-no">2</div>
+        <h3>Telefonunuzu eşleştirin</h3>
+        <p>“Telefonla Giriş Yap” ekranında kodu bir kez girin; cihazınız adınıza bağlanır.</p>
+      </div>
+      <div class="step">
+        <div class="step-no">3</div>
+        <h3>Karekodu okutun</h3>
+        <p>Kapıdaki afişteki karekodu kamera ile taratın; giriş/çıkış anında kaydedilir.</p>
+      </div>
+    </section>
+
+    <div style="margin:0 0 30px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;">
+      <a class="step" href="/marka" style="text-decoration:none;display:flex;gap:12px;align-items:center;">
+        <span class="material-symbols-outlined" style="font-size:26px;color:var(--brand);">palette</span>
+        <span>
+          <b style="display:block;font-size:13.5px;">Marka &amp; Materyal Kiti</b>
+          <span style="font-size:12px;color:var(--muted);">Kartvizit, kapı afişi, yaka kartı, sosyal medya</span>
+        </span>
+      </a>
+      <a class="step" href="/admin" style="text-decoration:none;display:flex;gap:12px;align-items:center;">
+        <span class="material-symbols-outlined" style="font-size:26px;color:var(--brand);">inventory_2</span>
+        <span>
+          <b style="display:block;font-size:13.5px;">Arşiv &amp; Depo</b>
+          <span style="font-size:12px;color:var(--muted);">Geçmiş puantajlar, belgeler, yedekler</span>
+        </span>
+      </a>
+    </div>
+
+    <div class="site-footer">
+      All Stars Music · Personel Devam Kontrol Sistemi ·
+      <a href="/p">Toplantı takvimi ve personel ekranı</a> ·
+      <a href="/marka">Marka kiti</a> ·
+      <a href="/kurulum">Kurulum</a>
+    </div>
+  </main>
+
+  <script src="/common.js"></script>
+  <script>
+    (function () {
+      const DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+      const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+
+      function pad(n) { return String(n).padStart(2, '0'); }
+
+      function tick() {
+        // İstanbul saati (kullanıcı hangi ülkede olursa olsun aynı saat)
+        const now = new Date();
+        const parts = new Intl.DateTimeFormat('tr-TR', {
+          timeZone: 'Europe/Istanbul',
+          hour: '2-digit', minute: '2-digit', second: '2-digit',
+          hour12: false
+        }).formatToParts(now).reduce(function (acc, p) { acc[p.type] = p.value; return acc; }, {});
+
+        const clockEl = document.getElementById('liveClock');
+        if (clockEl) clockEl.textContent = (parts.hour || '00') + ':' + (parts.minute || '00') + ':' + (parts.second || '00');
+
+        const dateEl = document.getElementById('liveDate');
+        if (dateEl) {
+          const ist = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }));
+          dateEl.textContent = ist.getDate() + ' ' + MONTHS[ist.getMonth()] + ' ' + ist.getFullYear() + ', ' + DAYS[ist.getDay()];
+        }
+      }
+
+      tick();
+      setInterval(tick, 1000);
+
+      if (window.PDKS) {
+        window.PDKS.apiFetch('/api/public-info').then(function (info) {
+          if (!info) return;
+          if (info.companyName) {
+            const t = document.getElementById('companyTitle');
+            if (t) t.textContent = info.companyName;
+            document.title = info.companyName + ' — Personel Giriş-Çıkış & Mesai Takip';
+          }
+          const hero = document.getElementById('heroTitle');
+          if (hero && info.setupDone === false) hero.textContent = 'Sistem kurulumu bekliyor';
+        }).catch(function () {});
+      }
+    })();
+  </script>
+</body>
+</html>
