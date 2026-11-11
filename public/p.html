@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
   <title>All Stars Music — Karekod Personel Girişi</title>
   <link rel="icon" href="/apple-touch-icon.png" type="image/png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -11,10 +11,19 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/app.css">
   <style>
+    html, body {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+      touch-action: pan-y;
+      -webkit-text-size-adjust: 100%;
+    }
     .phone-wrap {
+      width: 100%;
       max-width: 480px;
       margin: 0 auto;
-      padding: 16px 16px 48px;
+      padding: 16px 14px 48px;
+      box-sizing: border-box;
     }
     .emp-hero {
       background: linear-gradient(145deg, #0f172a, #1e293b);
@@ -123,6 +132,14 @@
             <div id="stWorked" style="font-size:16px;font-weight:800;margin-top:3px;">Off Day</div>
           </div>
         </div>
+
+        <!-- Ofis Dışı Görev / Dış Toplantı Aksiyon Butonu -->
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.12);display:flex;gap:8px;">
+          <button id="btnOutsideDuty" type="button" class="btn" style="flex:1;background:rgba(238,54,35,0.18);border:1px solid rgba(238,54,35,0.45);color:#fff;padding:10px 12px;font-size:13.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:10px;">
+            <span class="material-symbols-outlined" style="font-size:18px;color:#ee3623;">business_center</span>
+            <span>Ofis Dışı Görev / Dış Toplantı</span>
+          </button>
+        </div>
       </div>
 
       <!-- Pending Site Key Action -->
@@ -203,6 +220,16 @@
           <div class="field">
             <label style="font-size:12px;font-weight:600;">Katılımcılar</label>
             <input class="input" id="mParticipants" placeholder="Ekip, Yöneticiler vb." style="font-size:13px;padding:8px 10px;">
+          </div>
+          <div class="field">
+            <label style="font-size:12px;font-weight:600;">Toplantı Önemi / Renk</label>
+            <select class="input" id="mColor" style="font-size:13px;padding:8px 10px;">
+              <option value="blue">🔵 Normal Toplantı (Mavi)</option>
+              <option value="red">🔴 Çok Önemli / Acil (Kırmızı)</option>
+              <option value="amber">🟠 Orta Öncelikli (Turuncu)</option>
+              <option value="green">🟢 Müşteri / Dış Görüşme (Yeşil)</option>
+              <option value="purple">🟣 Yönetim / Strateji (Mor)</option>
+            </select>
           </div>
           <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;">
             <button type="button" id="cancelAddMeetingBtn" class="btn btn-sm" style="background:#fff;">Vazgeç</button>

@@ -344,12 +344,21 @@
       const todayDow = now.getDay();
       const todayStr = now.toISOString().slice(0, 10);
 
+      const COLOR_PALETTE = {
+        red: { border: '#ee3623', bg: '#fef2f2', text: '#991b1b', label: 'ACİL / ÖNEMLİ' },
+        blue: { border: '#3b82f6', bg: '#eff6ff', text: '#1e40af', label: 'NORMAL' },
+        amber: { border: '#f59e0b', bg: '#fffbeb', text: '#92400e', label: 'ORTA ÖNCELİK' },
+        green: { border: '#10b981', bg: '#f0fdf4', text: '#065f46', label: 'MÜŞTERİ' },
+        purple: { border: '#8b5cf6', bg: '#f5f3ff', text: '#5b21b6', label: 'YÖNETİM' }
+      };
+
       listEl.innerHTML = list
         .map((m) => {
           const isToday =
             (m.meeting_date && m.meeting_date === todayStr) ||
             (!m.meeting_date && Number(m.day_of_week) === todayDow);
 
+          const colCfg = COLOR_PALETTE[m.color] || COLOR_PALETTE.blue;
           const dayName = DAY_NAMES[m.day_of_week] || 'Gün';
           let dateBadge = `Her ${dayName}`;
           if (m.meeting_date) {
@@ -361,22 +370,21 @@
           }
 
           return `
-          <div style="padding:12px;border-radius:12px;border:1px solid ${isToday ? 'var(--primary)' : 'var(--border)'};border-left:5px solid ${
-            isToday ? 'var(--primary)' : '#94a3b8'
-          };background:${isToday ? '#f8faff' : '#fff'};box-shadow:0 2px 5px rgba(0,0,0,0.03);">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div style="padding:14px;border-radius:14px;border:1.5px solid ${colCfg.border};border-left:7px solid ${colCfg.border};background:${colCfg.bg};box-shadow:0 3px 8px rgba(0,0,0,0.04);margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
               <div style="display:flex;align-items:center;gap:6px;">
-                <span style="font-weight:700;font-size:12.5px;color:${isToday ? 'var(--primary)' : 'var(--text)'};display:inline-flex;align-items:center;gap:4px;"><span class="material-symbols-outlined" style="font-size:15px;">event</span> ${esc(dateBadge)}</span>
+                <span style="font-weight:700;font-size:12.5px;color:${colCfg.text};display:inline-flex;align-items:center;gap:4px;"><span class="material-symbols-outlined" style="font-size:15px;">event</span> ${esc(dateBadge)}</span>
                 ${isToday ? '<span class="badge badge-in" style="font-size:10px;padding:2px 6px;font-weight:700;">BUGÜN</span>' : ''}
+                <span class="badge" style="font-size:9.5px;padding:2px 6px;background:#fff;color:${colCfg.text};border:1px solid ${colCfg.border};font-weight:800;">${colCfg.label}</span>
               </div>
-              <span style="font-size:11.5px;font-weight:700;background:#f1f5f9;color:#0f172a;padding:2px 7px;border-radius:5px;display:inline-flex;align-items:center;gap:3px;"><span class="material-symbols-outlined" style="font-size:14px;">schedule</span> ${esc(
+              <span style="font-size:11.5px;font-weight:700;background:#fff;color:#0f172a;padding:3px 8px;border-radius:6px;border:1px solid rgba(0,0,0,0.08);display:inline-flex;align-items:center;gap:3px;"><span class="material-symbols-outlined" style="font-size:14px;">schedule</span> ${esc(
                 m.start_time
               )} - ${esc(m.end_time)}</span>
             </div>
-            <div style="font-weight:700;font-size:14.5px;color:#0f172a;margin-bottom:3px;">${esc(m.title)}</div>
+            <div style="font-weight:800;font-size:15px;color:#0f172a;margin-bottom:4px;">${esc(m.title)}</div>
             ${m.participants ? `<div style="font-size:12px;color:#475569;display:inline-flex;align-items:center;gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;">group</span> <strong>${esc(m.participants)}</strong></div>` : ''}
             ${m.room ? `<div style="font-size:12px;color:#64748b;display:inline-flex;align-items:center;gap:4px;margin-left:8px;"><span class="material-symbols-outlined" style="font-size:14px;">meeting_room</span> ${esc(m.room)}</div>` : ''}
-            ${m.description ? `<div style="font-size:11.5px;color:#94a3b8;margin-top:2px;font-style:italic;">${esc(m.description)}</div>` : ''}
+            ${m.description ? `<div style="font-size:11.5px;color:#64748b;margin-top:4px;font-style:italic;">${esc(m.description)}</div>` : ''}
           </div>`;
         })
         .join('');
@@ -415,6 +423,7 @@
         const startTime = document.getElementById('mStartTime').value;
         const endTime = document.getElementById('mEndTime').value;
         const participants = document.getElementById('mParticipants').value.trim();
+        const color = document.getElementById('mColor')?.value || 'blue';
 
         let dayOfWeek = 1;
         if (meetingDate) {
@@ -431,7 +440,8 @@
             startTime,
             endTime,
             participants,
-            room
+            room,
+            color
           }
         });
 
