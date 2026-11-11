@@ -64,9 +64,6 @@
         role: 'emp',
         body: { siteKey, qr, ...coords }
       });
-        role: 'emp',
-        body: { siteKey, qr, ...coords }
-      });
       pendingSiteKey = '';
       document.getElementById('pendingDoorBox').classList.add('hidden');
 
