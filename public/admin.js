@@ -1530,7 +1530,7 @@
     }
   });
 
-  document.getElementById('sessionsListBox').addEventListener('click', async (e) => {
+  document.getElementById('sessionsListBox')?.addEventListener('click', async (e) => {
     const btn = e.target.closest('[data-revoke-sess]');
     if (!btn) return;
     const id = btn.getAttribute('data-revoke-sess');
@@ -1539,7 +1539,7 @@
     loadSettingsTab();
   });
 
-  document.getElementById('mintClaimLinkBtn').addEventListener('click', async () => {
+  document.getElementById('mintClaimLinkBtn')?.addEventListener('click', async () => {
     try {
       const r = await apiFetch('/api/admin/neon-claim', { method: 'POST', role: 'admin' });
       const box = document.getElementById('claimResultBox');
@@ -1556,7 +1556,7 @@
   });
 
   // --- GLOBAL ACTIONS ---
-  document.getElementById('clearDemoBtn').addEventListener('click', async () => {
+  document.getElementById('clearDemoBtn')?.addEventListener('click', async () => {
     if (!confirm('10 örnek personel ve örnek mesai verileri temizlensin mi? (Eklediğiniz gerçek personeller silinmez.)'))
       return;
     const r = await apiFetch('/api/admin/clear-demo', { method: 'POST', role: 'admin' });
@@ -1564,10 +1564,10 @@
     loadOverview();
   });
 
-  document.getElementById('goDbSettingsBtn').addEventListener('click', () => switchTab('settings'));
-  document.getElementById('refreshNowBtn').addEventListener('click', () => switchTab(state.tab));
+  document.getElementById('goDbSettingsBtn')?.addEventListener('click', () => switchTab('settings'));
+  document.getElementById('refreshNowBtn')?.addEventListener('click', () => switchTab(state.tab));
 
-  document.getElementById('launchKioskBtn').addEventListener('click', async () => {
+  document.getElementById('launchKioskBtn')?.addEventListener('click', async () => {
     try {
       const r = await apiFetch('/api/admin/kiosk-token', {
         method: 'POST',
@@ -1581,7 +1581,7 @@
     }
   });
 
-  document.getElementById('adminLogoutBtn').addEventListener('click', async () => {
+  document.getElementById('adminLogoutBtn')?.addEventListener('click', async () => {
     await apiFetch('/api/logout', { method: 'POST', role: 'admin' }).catch(() => {});
     setToken('admin', '');
     showLoginGate();
@@ -1617,7 +1617,7 @@
     }, 10000);
   }
 
-  document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+  document.getElementById('adminLoginForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
       const r = await apiFetch('/api/login', {
@@ -1632,7 +1632,7 @@
     }
   });
 
-  document.getElementById('adminSetupForm').addEventListener('submit', async (e) => {
+  document.getElementById('adminSetupForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
       const r = await apiFetch('/api/setup', {
