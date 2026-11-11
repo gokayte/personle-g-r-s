@@ -32,32 +32,38 @@
     return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
   }
 
-  // Konum izni penceresi hiç yanıtlanmazsa (uygulama içi tarayıcılar vb.) sayfa sonsuza kadar
-  // beklemesin: sert zaman aşımı ekliyoruz.
-  function getGeoCoords(maxMs) {
+  // Her karekod okutmasında anlık en net GPS koordinatını alıyoruz
+  function getGeoCoords(maxMs = 10000) {
     const geo = new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
         return reject(new Error('Tarayıcınız konum özelliğini desteklemiyor.'));
       }
       navigator.geolocation.getCurrentPosition(
-        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => reject(new Error('Konum izni alınamadı. Lütfen konum izni verip tekrar deneyin.')),
-        { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+        (pos) => resolve({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy
+        }),
+        (err) => reject(new Error('Konum izni alınamadı: ' + (err.message || 'Erişim reddedildi'))),
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
       );
     });
-    return withTimeout(geo, maxMs, 'Konum alınamadı (zaman aşımı). Konum iznini kontrol edip tekrar deneyin.');
+    return withTimeout(geo, maxMs, 'Konum zaman aşımı. Lütfen açık alanda konum iznini onaylayın.');
   }
 
   async function submitDoorPunch({ siteKey = '', qr = '' }) {
     try {
       let coords = {};
       try {
-        coords = await getGeoCoords(geoRequired ? 15000 : 3000);
+        coords = await getGeoCoords(8000);
       } catch (e) {
-        if (geoRequired) throw e;
+        console.warn('GPS alinamadi:', e.message);
       }
       const res = await apiFetch('/api/phone/punch', {
         method: 'POST',
+        role: 'emp',
+        body: { siteKey, qr, ...coords }
+      });
         role: 'emp',
         body: { siteKey, qr, ...coords }
       });
