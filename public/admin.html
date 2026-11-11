@@ -332,25 +332,30 @@
         </div>
 
         <!-- Week Navigator Bar -->
-        <div class="card" style="margin-bottom:16px;padding:12px 18px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
-            <div style="display:flex;align-items:center;gap:8px;">
+        <div class="card" style="margin-bottom:16px;padding:14px;">
+          <!-- Hafta Seçimi & Tarih Başlığı -->
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:12px;">
+            <div id="calCurrentRangeTitle" style="font-weight:800;font-size:16px;color:var(--text);text-align:center;"></div>
+            <div style="display:flex;justify-content:center;gap:8px;">
               <button type="button" class="btn btn-sm" id="calPrevWeekBtn"><span class="material-symbols-outlined" style="font-size:16px;">chevron_left</span> Önceki Hafta</button>
               <button type="button" class="btn btn-sm" id="calTodayBtn">Bugün</button>
               <button type="button" class="btn btn-sm" id="calNextWeekBtn">Sonraki Hafta <span class="material-symbols-outlined" style="font-size:16px;">chevron_right</span></button>
-              <span id="calCurrentRangeTitle" style="font-weight:700;font-size:15px;margin-left:8px;color:var(--text);"></span>
             </div>
-            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-              <div class="meeting-filter-tabs" id="meetingDayFilters">
-                <button class="filter-chip active" data-day="all">Tüm Günler</button>
-                <button class="filter-chip" data-day="1">Pzt</button>
-                <button class="filter-chip" data-day="2">Sal</button>
-                <button class="filter-chip" data-day="3">Çar</button>
-                <button class="filter-chip" data-day="4">Per</button>
-                <button class="filter-chip" data-day="5">Cum</button>
-                <button class="filter-chip" data-day="6">Cmt</button>
-                <button class="filter-chip" data-day="0">Paz</button>
-              </div>
+          </div>
+
+          <!-- Gün Filtreleri & Görünüm -->
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="meeting-filter-tabs" id="meetingDayFilters" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;">
+              <button class="filter-chip active" data-day="all">Tüm Günler</button>
+              <button class="filter-chip" data-day="1">Pzt</button>
+              <button class="filter-chip" data-day="2">Sal</button>
+              <button class="filter-chip" data-day="3">Çar</button>
+              <button class="filter-chip" data-day="4">Per</button>
+              <button class="filter-chip" data-day="5">Cum</button>
+              <button class="filter-chip" data-day="6">Cmt</button>
+              <button class="filter-chip" data-day="0">Paz</button>
+            </div>
+            <div style="display:flex;justify-content:center;gap:8px;">
               <button type="button" class="btn btn-sm active" id="viewGridBtn" style="font-weight:600;"><span class="material-symbols-outlined" style="font-size:16px;">grid_view</span> Takvim</button>
               <button type="button" class="btn btn-sm" id="viewListBtn"><span class="material-symbols-outlined" style="font-size:16px;">view_list</span> Liste</button>
             </div>
