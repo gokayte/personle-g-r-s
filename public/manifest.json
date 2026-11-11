@@ -1,11 +1,16 @@
 {
-  "name": "Personel QR Giriş-Çıkış Takip",
-  "short_name": "PDKS QR",
+  "name": "All Stars Music PDKS",
+  "short_name": "All Stars",
   "start_url": "/p",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#0b0d13",
+  "theme_color": "#0b0d13",
   "icons": [
+    {
+      "src": "/allstar-logo.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png"
+    },
     {
       "src": "/icon.svg",
       "sizes": "any",

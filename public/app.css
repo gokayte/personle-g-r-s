@@ -433,16 +433,23 @@ tr:hover td { background: #f8fafc; }
 
 .meeting-week-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  width: 100%;
 }
 @media (min-width: 1200px) {
   .meeting-week-grid {
     grid-template-columns: repeat(7, 1fr);
-    gap: 10px;
+    gap: 8px;
   }
   .meeting-day-card {
     padding: 10px;
+  }
+}
+@media (max-width: 860px) {
+  .meeting-week-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 }
 .meeting-day-card {
@@ -729,8 +736,18 @@ tbody tr:hover { background: #fbfcfd; }
 
 .admin-main .container {
   width: 100%;
-  max-width: 1080px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
+  padding: 16px 16px 48px;
+}
+
+.tab-pane {
+  width: 100%;
+}
+
+.card {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Tablo ve Kart Düzeni (Ekranın taşmasını ve büyümesini önler) */
