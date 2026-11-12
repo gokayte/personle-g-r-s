@@ -3,6 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  /* PERSONEL AKIŞI KORUYUCUSU: kapı QR (?k=) / eşleştirme (?pair=, ?code=) linkleri
+     personel ekranına (/p) gider; kurulum sayfası açılmaz. */
+  (function () {
+    try {
+      var qs = new URLSearchParams(window.location.search);
+      var isPhoneEntry = ['k', 'pair', 'code'].some(function (key) {
+        return String(qs.get(key) || '').trim() !== '';
+      });
+      if (isPhoneEntry) window.location.replace('/p' + window.location.search);
+    } catch (e) {}
+  })();
+</script>
 <title>All Stars Music — Kurulum Kontrol Listesi</title>
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/app.css">

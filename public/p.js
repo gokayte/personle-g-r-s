@@ -5,8 +5,11 @@
   let pendingSiteKey = params.get('k') || '';
   const initialPairCode = params.get('pair') || '';
 
-  if (window.location.search) {
-    window.history.replaceState({}, '', window.location.pathname);
+  // Adres çubuğunu her zaman personel ekranına sabitle: QR parametreleri (?k=…) temizlenir,
+  // sayfa /p.html gibi bir varyanttan açıldıysa /p olarak gösterilir. Okutma bittiğinde
+  // çalışan başka bir sayfaya (yönetici/kiosk) değil, kendi personel sayfasına bakar.
+  if (window.location.search || window.location.pathname !== '/p') {
+    window.history.replaceState({}, '', '/p');
   }
 
   let scanner = null;
@@ -22,6 +25,12 @@
     document.getElementById('fbTitle').textContent = title;
     document.getElementById('fbSub').textContent = sub;
     fbBox.classList.remove('hidden');
+    // Okutma sonucu personel ekranının en üstündeki kartta görünür; ekranı yukarı al
+    try {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e) {
+      window.scrollTo(0, 0);
+    }
   }
 
   function withTimeout(promise, ms, message) {

@@ -32,13 +32,54 @@ const MIME = {
   '.ico': 'image/x-icon'
 };
 
+// --- PERSONEL OKUTMA AKIŞI YÖNLENDİRMESİ ---
+// Kapı QR afişi "…/p?k=ANAHTAR" biçimindedir. Eski/yanlış basılmış bir afiş veya
+// elle açılan bir bağlantı çalışanı yönetici (/admin), kiosk (/kiosk) ya da ana
+// sayfaya düşürürse, sunucu tarafında anında personel ekranına (/p) gönderilir.
+// Böylece okutma bittiğinde çalışan daima kendi personel sayfasında kalır.
+const EMPLOYEE_ENTRY_PARAMS = ['k', 'pair', 'code'];
+const EMPLOYEE_ENTRY_PATHS = new Set([
+  '/',
+  '/index.html',
+  '/admin',
+  '/admin.html',
+  '/kiosk',
+  '/kiosk.html',
+  '/kurulum',
+  '/kurulum.html',
+  '/marka',
+  '/marka/index.html',
+  '/marka/kapi-afisi.html'
+]);
+
+function normalizePathname(pathname) {
+  const cleaned = String(pathname || '/').replace(/\/+$/, '');
+  return cleaned === '' ? '/' : cleaned;
+}
+
+function isEmployeeEntryRequest(u, pathname) {
+  if (!EMPLOYEE_ENTRY_PATHS.has(pathname)) return false;
+  return EMPLOYEE_ENTRY_PARAMS.some((key) => String(u.searchParams.get(key) || '').trim() !== '');
+}
+
 const server = http.createServer((req, res) => {
   const u = new URL(req.url || '/', 'http://localhost');
   if (u.pathname === '/api' || u.pathname.startsWith('/api/')) {
     return apiHandler(req, res);
   }
 
-  let rel = decodeURIComponent(u.pathname);
+  const pathname = normalizePathname(u.pathname);
+
+  // Personel okutma/eşleştirme linki yanlış sayfaya açıldıysa personel ekranına yönlendir
+  if (isEmployeeEntryRequest(u, pathname)) {
+    res.writeHead(302, {
+      Location: '/p' + (u.search || ''),
+      'Cache-Control': 'no-store'
+    });
+    return res.end();
+  }
+
+  let rel = decodeURIComponent(pathname);
   if (rel === '/') rel = '/index.html';
   let filePath = path.normalize(path.join(PUBLIC_DIR, rel));
   if (!filePath.startsWith(PUBLIC_DIR)) {

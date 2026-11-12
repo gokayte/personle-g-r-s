@@ -30,3 +30,17 @@ Değişkenleri kaydettikten sonra **Deployments → Redeploy** ile projeyi yenid
 1. Yönetici panelinden **Personeller** sekmesine girip her personel için üretilen 6 haneli eşleştirme kodunu ilgili personele iletin.
 2. Personel telefonundan `/p` ekranını açıp kodu bir kez girer; cihaz tek cihaz kilidiyle eşleşir.
 3. Personel iş yeri kapısındaki QR afişini okutarak giriş-çıkış yapar.
+
+## 5) Okutma Sonrası Ekran (Personel Sayfası Garantisi)
+
+Kapı QR afişi `https://<yayın-adresiniz>/p?k=<kapı anahtarı>` içeriğini taşır. Çalışan okutmayı
+yaptığında telefon **doğrudan personel ekranına** gider, kayıt işlenir ve çalışan okutma sonunda
+**kendi personel sayfasında kalır** (giriş saati, mesai, bugünkü hareketler).
+
+Yönetici paneli (`/admin`) veya kiosk (`/kiosk`) adresleri `?k=`, `?pair=`, `?code=` parametreleriyle
+açılırsa otomatik olarak `/p` adresine yönlendirilir (Vercel `redirects` + `server.js` + sayfa içi
+koruyucu script). Böylece eski/yanlış basılmış bir afiş bile çalışanı yönetici sayfasına düşürmez.
+
+Kendi alan adınızı bağlarsanız (`ör. pdks.firmaniz.com`) afişteki karekod da otomatik olarak bu
+adresi kullanır; ayrıca `PUBLIC_URL` tanımlamanıza gerek yoktur. Sabit kalmasını isterseniz
+`PUBLIC_URL` ortam değişkenine tam adresi yazabilirsiniz.

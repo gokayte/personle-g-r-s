@@ -3,6 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    /* PERSONEL AKIŞI KORUYUCUSU
+       Kapı QR afişi (?k=ANAHTAR) veya personel eşleştirme linki (?pair=KOD / ?code=KOD)
+       ile gelen telefonlar hangi sayfaya düşerse düşsün PERSONEL ekranına (/p) gönderilir.
+       Yönetici paneli, personel okutma akışında asla açılmaz. */
+    (function () {
+      try {
+        var qs = new URLSearchParams(window.location.search);
+        var isPhoneEntry = ['k', 'pair', 'code'].some(function (key) {
+          return String(qs.get(key) || '').trim() !== '';
+        });
+        if (isPhoneEntry) window.location.replace('/p' + window.location.search);
+      } catch (e) {}
+    })();
+  </script>
   <title>Yönetici Paneli — Personel QR Takip</title>
   <link rel="icon" href="/allstar-logo.png" type="image/png">
   <link rel="apple-touch-icon" href="/allstar-logo.png">
@@ -18,6 +33,18 @@
         <div id="loginSub" style="font-size:13px;color:var(--muted);">Personel Giriş-Çıkış & Mesai Paneli</div>
       </div>
 
+      <!-- Bu cihaz personel olarak eşleştirilmişse: personel ekranına hızlı geçiş -->
+      <div id="adminEmpRedirectHint" class="hidden" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:12px;margin-bottom:14px;text-align:center;">
+        <div style="font-weight:800;font-size:14px;color:#1e3a8a;">Bu telefon personel olarak eşleştirilmiş</div>
+        <p style="margin:4px 0 10px;font-size:12.5px;color:#1e40af;line-height:1.5;">
+          Kapıdaki karekodu okuttuğunuzda giriş-çıkışınız personel ekranında görünür.
+          Yönetici paneli yalnızca yetkili cihazlar içindir.
+        </p>
+        <a href="/p" class="btn btn-primary" style="padding:11px;font-size:14px;justify-content:center;">
+          <span class="material-symbols-outlined" style="font-size:18px;">badge</span> Personel Ekranına Git
+        </a>
+      </div>
+
       <!-- Login Form -->
       <form id="adminLoginForm" style="display:flex;flex-direction:column;gap:12px;">
         <div class="field">
@@ -30,7 +57,10 @@
             Şifremi unuttum
           </button>
         </div>
-        <a href="/" class="btn" style="text-align:center;">Ana Sayfaya Dön</a>
+        <div style="display:flex;gap:8px;">
+          <a href="/p" class="btn" style="flex:1;text-align:center;justify-content:center;">Personel Ekranı</a>
+          <a href="/" class="btn" style="flex:1;text-align:center;justify-content:center;">Ana Sayfa</a>
+        </div>
       </form>
 
       <!-- First Time Setup Form (only if DB has no admin yet) -->
