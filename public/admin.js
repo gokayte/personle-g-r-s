@@ -1595,6 +1595,9 @@
     document.getElementById('adminLoginForm').classList.toggle('hidden', needSetup);
     document.getElementById('adminSetupForm').classList.toggle('hidden', !needSetup);
     document.getElementById('loginTitle').textContent = needSetup ? 'İlk Sistem Kurulumu' : 'Yönetici Girişi';
+    // Yönetici oturumu olmayan ama personel olarak eşleştirilmiş telefonları
+    // tek dokunuşla kendi ekranına (/p) göndermek için yönlendirme kartını göster
+    document.getElementById('adminEmpRedirectHint')?.classList.toggle('hidden', !getToken('emp') || Boolean(getToken('admin')));
   }
 
   function startApp() {

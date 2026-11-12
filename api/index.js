@@ -86,13 +86,27 @@ function getClientIp(req) {
 }
 
 function getPublicBaseUrl(req) {
-  if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL.replace(/\/+$/, '');
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`.replace(/\/+$/, '');
-  }
-  const proto = req.headers['x-forwarded-proto'] || 'http';
-  const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
-  return `${proto}://${host}`.replace(/\/+$/, '');
+  const clean = (value) => String(value || '').trim().replace(/\/+$/, '');
+
+  // 1) Elle tanımlanmış yayın adresi (PUBLIC_URL) her zaman önceliklidir
+  if (process.env.PUBLIC_URL) return clean(process.env.PUBLIC_URL);
+
+  const host = clean(String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0]);
+  const isLocalHost = /^(localhost|127\.|0\.0\.0\.0|\[?::1)/i.test(host);
+  const proto =
+    clean(String(req.headers['x-forwarded-proto'] || '').split(',')[0]) || (isLocalHost ? 'http' : 'https');
+  const productionHost = clean(process.env.VERCEL_PROJECT_PRODUCTION_URL || '');
+  const deploymentHost = clean(process.env.VERCEL_URL || '');
+
+  // 2) Kendi alan adınız (veya yerel geliştirme adresi) kullanılıyorsa o adres esas alınır.
+  //    Böylece kapı QR afişi, personelin gerçekten kullandığı adrese bağlanır.
+  if (host && !/\.vercel\.app$/i.test(host)) return clean(`${proto}://${host}`);
+
+  // 3) Geçici dağıtım/önizleme adresleri (…-hash.vercel.app) QR'a asla yazılmaz;
+  //    kalıcı üretim adresi kullanılır. Aksi halde basılan afiş bir süre sonra çalışmaz.
+  if (productionHost) return clean(`https://${productionHost}`);
+  if (host && host !== deploymentHost) return clean(`https://${host}`);
+  return isLocalHost ? `http://${host}` : 'http://localhost:3000';
 }
 
 async function isSetupDone() {
