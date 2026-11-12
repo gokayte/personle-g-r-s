@@ -387,6 +387,7 @@
             <div style="font-weight:800;font-size:15px;color:#0f172a;margin-bottom:4px;">${esc(m.title)}</div>
             ${m.participants ? `<div style="font-size:12px;color:#475569;display:inline-flex;align-items:center;gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;">group</span> <strong>${esc(m.participants)}</strong></div>` : ''}
             ${m.room ? `<div style="font-size:12px;color:#64748b;display:inline-flex;align-items:center;gap:4px;margin-left:8px;"><span class="material-symbols-outlined" style="font-size:14px;">meeting_room</span> ${esc(m.room)}</div>` : ''}
+            ${m.created_by ? `<div style="font-size:11.5px;color:#0369a1;display:inline-flex;align-items:center;gap:4px;margin-left:8px;background:#e0f2fe;padding:1px 6px;border-radius:4px;"><span class="material-symbols-outlined" style="font-size:13px;">person</span> Ekleyen: <strong>${esc(m.created_by)}</strong></div>` : ''}
             ${m.description ? `<div style="font-size:11.5px;color:#64748b;margin-top:4px;font-style:italic;">${esc(m.description)}</div>` : ''}
           </div>`;
         })
@@ -458,26 +459,12 @@
     });
   }
 
-  // --- DOĞRUDAN UYGULAMA İÇİ KAREKOD OKUTMA & DIŞ GÖREV DİNLİYİCİLERİ ---
-  const scanQrDirectBtn = document.getElementById('btnScanQrDirect');
+  // --- DIŞ GÖREV DİNLİYİCİSİ ---
   const outsideDutyBtn = document.getElementById('btnOutsideDuty');
-
-  if (scanQrDirectBtn) {
-    scanQrDirectBtn.addEventListener('click', () => {
-      // Uygulama içerisindeki kamerayı anında açar
-      const camCard = document.getElementById('qrScannerCard');
-      if (camCard) {
-        camCard.classList.remove('hidden');
-        camCard.scrollIntoView({ behavior: 'smooth' });
-      }
-      const openCamBtn = document.getElementById('openPhoneCamBtn');
-      if (openCamBtn) openCamBtn.click();
-    });
-  }
 
   if (outsideDutyBtn) {
     outsideDutyBtn.addEventListener('click', async () => {
-      if (!confirm('Ofis dışı görev / dış toplantı çıkış kaydınızı GPS konumunuzla onaylıyor musunuz?')) return;
+      if (!confirm('Ofis dışı görev / dış toplantı çıkış kaydınız oluşturulsun mu?')) return;
       try {
         let coords = {};
         try {
@@ -490,7 +477,7 @@
           role: 'emp',
           body: { ...coords }
         });
-        toast(res.message || 'Ofis dışı görev başarıyla kaydedildi!', 'ok');
+        toast('Ofis dışı görev çıkışınız kaydedildi.', 'ok');
         await refreshProfile(false);
       } catch (err) {
         toast(err.message, 'err');

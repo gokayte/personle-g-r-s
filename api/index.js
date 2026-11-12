@@ -688,7 +688,7 @@ module.exports = async function handler(req, res) {
     }
 
     if (route === '/meetings' && method === 'POST') {
-      await requireAuth(req, ['employee', 'admin']);
+      const sess = await requireAuth(req, ['employee', 'admin']);
       const body = await parseBody(req);
       const title = String(body.title || '').trim();
       if (!title) {
@@ -703,10 +703,19 @@ module.exports = async function handler(req, res) {
       const description = String(body.description || '').trim();
       const color = String(body.color || 'blue').trim();
 
+      let createdByName = 'Yönetici';
+      if (sess.role === 'employee' && sess.employee_id) {
+        const empR = await query(`SELECT name FROM employees WHERE id = $1`, [sess.employee_id]);
+        if (empR.rowCount > 0) createdByName = empR.rows[0].name;
+      }
+
+      // Add column if missing dynamically
+      await query(`ALTER TABLE meetings ADD COLUMN created_by TEXT NOT NULL DEFAULT ''`).catch(() => {});
+
       const ins = await query(
-        `INSERT INTO meetings(title, description, day_of_week, meeting_date, start_time, end_time, participants, room, color)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-        [title, description, dayOfWeek, meetingDate, startTime, endTime, participants, room, color]
+        `INSERT INTO meetings(title, description, day_of_week, meeting_date, start_time, end_time, participants, room, color, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+        [title, description, dayOfWeek, meetingDate, startTime, endTime, participants, room, color, createdByName]
       );
       return sendJson(res, 200, { ok: true, meeting: ins.rows[0] });
     }
