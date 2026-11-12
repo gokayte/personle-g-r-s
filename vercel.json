@@ -15,7 +15,10 @@
     { "source": "/kiosk", "has": [{ "type": "query", "key": "k" }], "destination": "/p", "permanent": false },
     { "source": "/kiosk", "has": [{ "type": "query", "key": "pair" }], "destination": "/p", "permanent": false },
     { "source": "/kiosk.html", "has": [{ "type": "query", "key": "k" }], "destination": "/p", "permanent": false },
-    { "source": "/kiosk.html", "has": [{ "type": "query", "key": "pair" }], "destination": "/p", "permanent": false }
+    { "source": "/kiosk.html", "has": [{ "type": "query", "key": "pair" }], "destination": "/p", "permanent": false },
+    { "source": "/kurulum", "has": [{ "type": "query", "key": "k" }], "destination": "/p", "permanent": false },
+    { "source": "/kurulum.html", "has": [{ "type": "query", "key": "k" }], "destination": "/p", "permanent": false },
+    { "source": "/marka/kapi-afisi.html", "has": [{ "type": "query", "key": "k" }], "destination": "/p", "permanent": false }
   ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api?__p=$1" }

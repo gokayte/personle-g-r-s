@@ -1,5 +1,6 @@
 (function () {
-  const { apiFetch, getToken, setToken, esc, toast, playTone, speakText } = window.PDKS;
+  const { apiFetch, getToken, setToken, esc, toast, playTone, speakText, zonedDateStr, zonedDayOfWeek } =
+    window.PDKS;
 
   const params = new URLSearchParams(window.location.search);
   let pendingSiteKey = params.get('k') || '';
@@ -60,7 +61,48 @@
     return withTimeout(geo, maxMs, 'Konum zaman aşımı. Lütfen açık alanda konum iznini onaylayın.');
   }
 
+  let punchInProgress = false;
+
+  async function handlePunchResult(res) {
+    pendingSiteKey = '';
+    document.getElementById('pendingDoorBox').classList.add('hidden');
+    // Yedek okutma kutusu açıksa kapat: işlem bitti, çalışan kendi özetini görsün
+    document.getElementById('qrScannerCard')?.classList.add('hidden');
+
+    if (res.duplicate) {
+      playTone('err');
+      showFeedback(
+        'fb-warn',
+        'hourglass_empty',
+        'AZ ÖNCE KAYDEDİLDİ',
+        `Son işleminiz (${res.lastPunch.timeStr}) zaten kayıtlı. (${res.waitSeconds} sn koruma)`
+      );
+    } else {
+      const isIn = res.punch.type === 'in';
+      playTone(isIn ? 'in' : 'out');
+      const empName = (document.getElementById('empName')?.textContent || '').trim();
+      const firstName = empName && empName !== '-' ? empName.split(' ')[0] : '';
+
+      if (isIn) {
+        const msg = firstName ? `İyi çalışmalar, mutlu günler ${firstName}!` : 'İyi çalışmalar, mutlu günler!';
+        showFeedback('fb-in', 'login', `GİRİŞ YAPILDI (${res.punch.timeStr})`, msg);
+        if (typeof speakText === 'function') speakText(msg);
+      } else {
+        const msg = firstName ? `İyi akşamlar ${firstName}!` : 'İyi akşamlar!';
+        showFeedback('fb-out', 'logout', `ÇIKIŞ YAPILDI (${res.punch.timeStr})`, `${msg} Mesai: ${res.durationText}`);
+        if (typeof speakText === 'function') speakText(msg);
+      }
+    }
+    await refreshProfile(false);
+  }
+
   async function submitDoorPunch({ siteKey = '', qr = '' }) {
+    // Çift dokunuş / çift okutma koruması: istek sürerken yeni istek başlatılmaz
+    if (punchInProgress) return;
+    punchInProgress = true;
+    const confirmBtn = document.getElementById('confirmDoorPunchBtn');
+    if (confirmBtn) confirmBtn.disabled = true;
+
     try {
       let coords = {};
       try {
@@ -68,45 +110,40 @@
       } catch (e) {
         console.warn('GPS alinamadi:', e.message);
       }
-      const res = await apiFetch('/api/phone/punch', {
-        method: 'POST',
-        role: 'emp',
-        body: { siteKey, qr, ...coords }
-      });
-      pendingSiteKey = '';
-      document.getElementById('pendingDoorBox').classList.add('hidden');
 
-      if (res.duplicate) {
-        playTone('err');
-        showFeedback(
-          'fb-warn',
-          'hourglass_empty',
-          'AZ ÖNCE KAYDEDİLDİ',
-          `Son işleminiz (${res.lastPunch.timeStr}) zaten kayıtlı. (${res.waitSeconds} sn koruma)`
-        );
-      } else {
-        const isIn = res.punch.type === 'in';
-        playTone(isIn ? 'in' : 'out');
-        const empName = (document.getElementById('empName')?.textContent || '').trim();
-        const firstName = empName && empName !== '-' ? empName.split(' ')[0] : '';
-
-        if (isIn) {
-          const msg = firstName ? `İyi çalışmalar, mutlu günler ${firstName}!` : 'İyi çalışmalar, mutlu günler!';
-          showFeedback('fb-in', 'login', `GİRİŞ YAPILDI (${res.punch.timeStr})`, msg);
-          if (typeof speakText === 'function') speakText(msg);
-        } else {
-          const msg = firstName ? `İyi akşamlar ${firstName}!` : 'İyi akşamlar!';
-          showFeedback('fb-out', 'logout', `ÇIKIŞ YAPILDI (${res.punch.timeStr})`, `${msg} Mesai: ${res.durationText}`);
-          if (typeof speakText === 'function') speakText(msg);
+      // Kapıda zayıf mobil veri yüzünden kayıt kaçmasın: geçici ağ/sunucu hatasında bir kez otomatik yeniden dene
+      let lastErr = null;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          const res = await apiFetch('/api/phone/punch', {
+            method: 'POST',
+            role: 'emp',
+            body: { siteKey, qr, ...coords }
+          });
+          await handlePunchResult(res);
+          lastErr = null;
+          break;
+        } catch (err) {
+          lastErr = err;
+          const transient = !err.status || err.status >= 500;
+          if (transient && attempt === 1) {
+            toast('Bağlantı kurulamadı, otomatik yeniden deneniyor...', 'err');
+            await new Promise((r) => setTimeout(r, 1200));
+            continue;
+          }
+          break;
         }
       }
-      await refreshProfile(false);
+      if (lastErr) throw lastErr;
     } catch (err) {
       playTone('err');
       toast(err.message, 'err');
       if (pendingSiteKey) {
         document.getElementById('pendingDoorBox').classList.remove('hidden');
       }
+    } finally {
+      punchInProgress = false;
+      if (confirmBtn) confirmBtn.disabled = false;
     }
   }
 
@@ -138,6 +175,20 @@
       } else {
         badge.className = 'badge badge-neutral';
         badge.textContent = 'Off Day';
+      }
+
+      // Bu hafta özeti (son 7 gün) — sunucu weekStats döndürürse personel ekranında gösterilir
+      const weekEl = document.getElementById('weekSummary');
+      if (weekEl) {
+        const w = data.weekStats;
+        if (w) {
+          weekEl.classList.remove('hidden');
+          document.getElementById('wkTotal').textContent = w.workedText || '—';
+          document.getElementById('wkDays').textContent = `${w.workedDays ?? 0} gün`;
+          document.getElementById('wkLate').textContent = w.lateDays > 0 ? `${w.lateDays} kez` : 'Yok';
+        } else {
+          weekEl.classList.add('hidden');
+        }
       }
 
       const listEl = document.getElementById('empPunchList');
@@ -220,16 +271,6 @@
   document.getElementById('confirmDoorPunchBtn').addEventListener('click', () => {
     if (pendingSiteKey) submitDoorPunch({ siteKey: pendingSiteKey });
   });
-
-  async function stopPhoneCam() {
-    if (scanner) {
-      await scanner.stop().catch(() => {});
-      scanner.destroy();
-      scanner = null;
-    }
-    document.getElementById('phoneCamWrap').classList.add('hidden');
-    document.getElementById('openPhoneCamBtn').classList.remove('hidden');
-  }
 
   document.getElementById('openPhoneCamBtn').addEventListener('click', async () => {
     if (!window.QrScanner) return toast('QR okuyucu yüklenemedi.', 'err');
@@ -353,8 +394,9 @@
       }
 
       const now = new Date();
-      const todayDow = now.getDay();
-      const todayStr = now.toISOString().slice(0, 10);
+      // Sunucu ile aynı saat dilimi: "BUGÜN" rozeti İstanbul gününe göre işaretlenir
+      const todayDow = zonedDayOfWeek(now);
+      const todayStr = zonedDateStr(now);
 
       const COLOR_PALETTE = {
         red: { border: '#ee3623', bg: '#fef2f2', text: '#991b1b', label: 'ACİL / ÖNEMLİ' },
@@ -411,7 +453,7 @@
     openAddBtn.addEventListener('click', () => {
       addForm.classList.toggle('hidden');
       if (!addForm.classList.contains('hidden')) {
-        const todayStr = new Date().toISOString().slice(0, 10);
+        const todayStr = zonedDateStr(new Date());
         const dateInput = document.getElementById('mDate');
         if (dateInput && !dateInput.value) dateInput.value = todayStr;
         document.getElementById('mTitle')?.focus();

@@ -64,6 +64,50 @@ async function req(path, opts = {}) {
     }
   }
 
+  // 1b) Personel akışı yönlendirmeleri (kapı QR'ı hangi sayfaya basılı olursa olsun /p'ye gitmeli)
+  console.log('\nPersonel akışı yönlendirmeleri:');
+  const redirectCases = [
+    ['/admin?k=TESTKEY', '/p'],
+    ['/admin.html?k=TESTKEY', '/p'],
+    ['/kiosk?k=TESTKEY', '/p'],
+    ['/?k=TESTKEY', '/p'],
+    ['/kurulum?pair=123456', '/p'],
+    ['/marka/kapi-afisi.html?k=TESTKEY', '/p']
+  ];
+  for (const [path, expectPath] of redirectCases) {
+    try {
+      const res = await fetch(BASE + path, { redirect: 'manual' });
+      const loc = res.headers.get('location') || '';
+      if ([301, 302, 307, 308].includes(res.status) && loc.startsWith(expectPath)) {
+        ok(`${path}`, `${res.status} → ${loc}`);
+      } else {
+        bad(`${path}`, `${res.status}, location=${loc || 'yok'} (beklenen: ${expectPath})`);
+      }
+    } catch (e) {
+      bad(`${path}`, e.message);
+    }
+  }
+
+  // 1c) Personel ekranı koruyucuları yerinde mi?
+  console.log('\nSayfa koruyucuları:');
+  const guardCases = [
+    ['/admin', 'PERSONEL AKIŞI KORUYUCUSU'],
+    ['/admin', 'adminEmpRedirectHint'],
+    ['/kiosk', 'PERSONEL AKIŞI KORUYUCUSU'],
+    ['/', 'PERSONEL AKIŞI KORUYUCUSU'],
+    ['/p', 'weekSummary'],
+    ['/p', 'btnScanQrDirect']
+  ];
+  for (const [path, needle] of guardCases) {
+    try {
+      const { res, text } = await req(path);
+      if (res.ok && text.includes(needle)) ok(`${path} → ${needle}`);
+      else bad(`${path} → ${needle}`, `${res.status}, bulunamadı`);
+    } catch (e) {
+      bad(`${path} → ${needle}`, e.message);
+    }
+  }
+
   // 2) Sağlık & kurulum
   console.log('\nAPI:');
   let health;

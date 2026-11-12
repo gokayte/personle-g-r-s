@@ -14,6 +14,11 @@ Karekod (QR) okutma tabanlı, gerçek zamanlı bulut veritabanlı personel devam
   - Mesai saatleri, tolerans süreleri ve isteğe bağlı iş yeri GPS konum doğrulaması
 - **Kapı Kiosk Terminali (`/kiosk`)**: Sabit tablet/telefon/bilgisayar kamerasıyla personel kartı okutma (veya USB barkod okuyucu desteği).
 - **Personel Telefon Ekranı (`/p`)**: Personelin kendi telefonuyla kapıdaki QR afişi okutarak giriş-çıkış yapması.
+  - Bugünkü ilk giriş / son çıkış / mesai + **son 7 günün özeti** (toplam mesai, çalışılan gün, geç giriş)
+  - Kapıda zayıf mobil veriye karşı **otomatik yeniden deneme**, çift dokunuş koruması
+  - Telefonun kamera uygulaması çalışmazsa **uygulama içinden okutma / fotoğraf çekme** yedeği
+  - Tüm "bugün" hesapları `Europe/Istanbul` gününe göre (gece 00:00–03:00 kayması yok)
+- **Performans**: Statik dosyalar (CSS/JS/görsel) Vercel kenar önbelleğine alınır, sayfalar her zaman taze (`no-cache`); markalı 404 sayfası personeli `/p`'ye yönlendirir.
 
 ## Kapı Karekodu Akışı (Personel)
 1. Çalışan kapıdaki QR afişini telefonunun kamerasıyla okutur.

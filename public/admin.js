@@ -1,6 +1,16 @@
 (function () {
-  const { apiFetch, getToken, setToken, esc, makeQrSvg, toast, playTone, formatDateTr, formatPairCode } =
-    window.PDKS;
+  const {
+    apiFetch,
+    getToken,
+    setToken,
+    esc,
+    makeQrSvg,
+    toast,
+    playTone,
+    formatDateTr,
+    formatPairCode,
+    zonedDateStr
+  } = window.PDKS;
 
   let state = {
     tab: 'overview',
@@ -681,7 +691,7 @@
 
   async function openPunchModal(existing = null) {
     if (!state.employees.length) await ensureEmployeeDropdown();
-    const today = state.overview?.todayWorkDate || new Date().toISOString().slice(0, 10);
+    const today = state.overview?.todayWorkDate || zonedDateStr(new Date());
     const nowHm = new Intl.DateTimeFormat('tr-TR', {
       timeZone: 'Europe/Istanbul',
       hour: '2-digit',
@@ -851,7 +861,7 @@
     const presetBtn = e.target.closest('[data-rep-preset]');
     if (!presetBtn) return;
     const p = presetBtn.getAttribute('data-rep-preset');
-    const today = state.overview?.todayWorkDate || new Date().toISOString().slice(0, 10);
+    const today = state.overview?.todayWorkDate || zonedDateStr(new Date());
     if (p === 'today') {
       document.getElementById('repFrom').value = today;
       document.getElementById('repTo').value = today;
@@ -976,7 +986,7 @@
       titleEl.textContent = `${start.dayNum} ${start.monthName} - ${end.dayNum} ${end.monthName} ${end.date.getFullYear()}`;
     }
 
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = zonedDateStr(new Date()); // İstanbul günü (UTC kayması olmaz)
 
     const filteredDays =
       state.activeMeetingDay === 'all'
