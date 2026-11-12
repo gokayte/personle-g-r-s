@@ -169,6 +169,53 @@
     return s.length === 6 ? `${s.slice(0, 3)} ${s.slice(3)}` : s;
   }
 
+  // --- SAAT DİLİMİ GÜVENLİ TARİH YARDIMCILARI ---
+  // Sunucu tüm kayıtları Europe/Istanbul iş gününe göre tutar. Tarayıcıda
+  // new Date().toISOString() UTC olduğu için 00:00-03:00 arasında bir önceki
+  // günü döndürür; bu da "BUGÜN" rozetlerini ve rapor ön ayarlarını kaydırır.
+  const DEFAULT_TZ = 'Europe/Istanbul';
+
+  function zonedDateStr(date = new Date(), timeZone = DEFAULT_TZ) {
+    const d = date instanceof Date ? date : new Date(date);
+    try {
+      // en-CA => YYYY-MM-DD
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(d);
+    } catch (e) {
+      return d.toISOString().slice(0, 10);
+    }
+  }
+
+  function zonedTimeStr(date = new Date(), timeZone = DEFAULT_TZ) {
+    const d = date instanceof Date ? date : new Date(date);
+    try {
+      return new Intl.DateTimeFormat('en-GB', {
+        timeZone,
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23'
+      }).format(d);
+    } catch (e) {
+      return d.toISOString().slice(11, 16);
+    }
+  }
+
+  function zonedDayOfWeek(date = new Date(), timeZone = DEFAULT_TZ) {
+    const [y, m, day] = zonedDateStr(date, timeZone).split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, day)).getUTCDay();
+  }
+
+  function shiftDateStr(dateStr, deltaDays) {
+    const [y, m, d] = String(dateStr || '').split('-').map(Number);
+    if (!y || !m || !d) return dateStr;
+    const dt = new Date(Date.UTC(y, m - 1, d + deltaDays));
+    return dt.toISOString().slice(0, 10);
+  }
+
   window.PDKS = {
     getToken,
     setToken,
@@ -179,6 +226,10 @@
     playTone,
     speakText,
     formatDateTr,
-    formatPairCode
+    formatPairCode,
+    zonedDateStr,
+    zonedTimeStr,
+    zonedDayOfWeek,
+    shiftDateStr
   };
 })();

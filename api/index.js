@@ -584,6 +584,29 @@ module.exports = async function handler(req, res) {
         timeStr: getZonedParts(p.ts, tz).timeStr
       }));
 
+      // Son 7 günlük özet: personel kendi haftalık mesaisini telefonundan görebilsin
+      const weekFromWd = shiftDateStr(todayWd, -6);
+      const [weekStartUtc] = workDateBoundsUtc(weekFromWd, tz, dayStartHour);
+      const weekRes = await query(
+        `SELECT id, ts, type FROM punches WHERE employee_id = $1 AND ts >= $2 AND ts < $3 ORDER BY ts ASC, id ASC`,
+        [emp.id, weekStartUtc.toISOString(), endUtc.toISOString()]
+      );
+      const weekGroups = new Map();
+      for (const p of weekRes.rows) {
+        const wd = getWorkDate(p.ts, tz, dayStartHour);
+        if (!weekGroups.has(wd)) weekGroups.set(wd, []);
+        weekGroups.get(wd).push(p);
+      }
+      let weekMinutes = 0;
+      let weekWorkedDays = 0;
+      let weekLateDays = 0;
+      for (const [wd, list] of weekGroups) {
+        const dayStat = calcDayStats(list, config, wd, todayWd, now.getTime());
+        weekMinutes += dayStat.workedMinutes;
+        if (dayStat.workedMinutes > 0) weekWorkedDays += 1;
+        if (dayStat.lateMinutes > 0) weekLateDays += 1;
+      }
+
       return sendJson(res, 200, {
         ok: true,
         companyName: config.companyName,
@@ -592,6 +615,14 @@ module.exports = async function handler(req, res) {
         todayStats: {
           ...stats,
           workedText: formatDurationTr(stats.workedMinutes)
+        },
+        weekStats: {
+          fromDate: weekFromWd,
+          toDate: todayWd,
+          workedMinutes: weekMinutes,
+          workedText: formatDurationTr(weekMinutes),
+          workedDays: weekWorkedDays,
+          lateDays: weekLateDays
         },
         todayPunches: punchesFormatted
       });
@@ -677,10 +708,11 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      const forcedType = body.forcedType === 'in' || body.forcedType === 'out' ? body.forcedType : null;
+      // Güvenlik: Personel kendi okutmasında giriş/çıkış yönünü zorlayamaz; yön otomatik belirlenir.
+      // (forcedType yalnızca kiosk terminali ve yönetici panelinde geçerlidir.)
       const result = await recordPunch({
         employeeId: sess.employee_id,
-        forcedType,
+        forcedType: null,
         source: 'phone',
         meta
       });

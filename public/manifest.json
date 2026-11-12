@@ -1,10 +1,17 @@
 {
-  "name": "All Stars Music PDKS",
+  "name": "All Stars Music PDKS — Personel Giriş Çıkış",
   "short_name": "All Stars",
+  "description": "Kapıdaki karekodu okut; giriş-çıkışın ve mesain anında kaydedilsin.",
+  "id": "/p",
+  "lang": "tr",
+  "dir": "ltr",
   "start_url": "/p",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#0b0d13",
   "theme_color": "#0b0d13",
+  "categories": ["business", "productivity"],
   "icons": [
     {
       "src": "/apple-touch-icon.png",
@@ -26,6 +33,15 @@
       "src": "/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Personel Ekranı",
+      "short_name": "Personel",
+      "description": "Giriş-çıkış ve mesai ekranım",
+      "url": "/p",
+      "icons": [{ "src": "/icon-512.png", "sizes": "512x512" }]
     }
   ]
 }

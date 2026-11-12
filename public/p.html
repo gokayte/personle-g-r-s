@@ -133,6 +133,25 @@
           </div>
         </div>
 
+        <!-- Bu Hafta Özeti (son 7 gün) -->
+        <div id="weekSummary" class="hidden" style="margin-top:12px;padding:12px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);">
+          <div style="font-size:10.5px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Bu Hafta · Son 7 Gün</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;">
+            <div>
+              <div id="wkTotal" style="font-size:15px;font-weight:800;">—</div>
+              <div style="font-size:10.5px;color:#94a3b8;font-weight:600;">Toplam Mesai</div>
+            </div>
+            <div>
+              <div id="wkDays" style="font-size:15px;font-weight:800;">0 gün</div>
+              <div style="font-size:10.5px;color:#94a3b8;font-weight:600;">Çalışılan Gün</div>
+            </div>
+            <div>
+              <div id="wkLate" style="font-size:15px;font-weight:800;">Yok</div>
+              <div style="font-size:10.5px;color:#94a3b8;font-weight:600;">Geç Giriş</div>
+            </div>
+          </div>
+        </div>
+
         <!-- Ofis Dışı Görev / Dış Toplantı Aksiyon Butonu -->
         <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.12);display:flex;gap:8px;">
           <button id="btnOutsideDuty" type="button" class="btn" style="flex:1;background:rgba(238,54,35,0.18);border:1px solid rgba(238,54,35,0.45);color:#fff;padding:12px 14px;font-size:14px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:10px;">
@@ -151,7 +170,7 @@
         </button>
       </div>
 
-      <!-- QR Scanner Section (Opsiyonel / Gizli) -->
+      <!-- QR Scanner Section (Yedek yöntem açıldığında görünür) -->
       <div class="card hidden" id="qrScannerCard" style="margin-bottom:16px;">
         <div style="font-weight:700;font-size:15px;margin-bottom:6px;">Giriş-Çıkış Karekodunu Okut</div>
         <p style="font-size:13px;color:var(--muted);margin:0 0 12px;line-height:1.45;">
@@ -244,6 +263,14 @@
       <div class="card" style="margin-top:4px;">
         <div style="font-weight:700;font-size:14.5px;margin-bottom:10px;">Bugünkü Hareketleriniz</div>
         <div id="empPunchList" style="display:flex;flex-direction:column;gap:8px;font-size:13.5px;"></div>
+      </div>
+
+      <!-- Yedek okutma (küçük ve sakin): telefonun kamera uygulaması çalışmazsa diye -->
+      <div id="scanFallbackBox" style="text-align:center;margin:18px 0 4px;">
+        <button id="btnScanQrDirect" type="button" style="background:none;border:none;padding:6px 8px;font-size:12.5px;color:var(--muted);text-decoration:underline;cursor:pointer;display:inline-flex;align-items:center;gap:5px;">
+          <span class="material-symbols-outlined" style="font-size:15px;">photo_camera</span>
+          Karekodu okutamadım — uygulama içinden dene
+        </button>
       </div>
     </section>
   </main>
